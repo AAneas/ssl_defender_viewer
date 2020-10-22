@@ -2,6 +2,9 @@ import goal
 from geometry import segmentCircleIntersection
 #import board.py
 import math
+import sys
+import json
+from board import *
 
 class Graph:
     def __init__(self, board):#, tirs cadrés, ):
@@ -10,8 +13,11 @@ class Graph:
         self.onTargetShots()
         self.defender_position_nodes = []
         self.everyGridPosition()
-        #self.defending_edges = []
-        self.computeDefending()
+        ###self.defending_edges = []
+        #self.computeDefending()
+        #self.deleteUnnecessaryDefenders()
+        #print(self.isSolution()) #faire qqch de cette info
+        #self.WriteSolution()
 
     def onTargetShots(self):
         #screen = pygame.display.set_mode(board.size) #numpy.array([1280, 960])
@@ -19,7 +25,7 @@ class Graph:
             kick_dir = 0
             opp_pos = self.board.problem.getOpponent(opp_id)
             while kick_dir < 2 * math.pi:
-                for goal in self.board.goals:
+                for goal in self.board.problem.goals:
                     goal_pos = goal.kickResult(opp_pos, kick_dir)
                     if goal_pos is not None :
                         s = Shot(opp_pos, kick_dir, goal_pos)
@@ -102,7 +108,7 @@ class Graph:
         return True
 
     def WriteSolution(self):
-        f = open("computed_solution.json", "w")
+        f = open("computed_solution.json", "w") # à voir si on met un nom modifiable par l'utilisateur
         f.write("{\n\t\"defenders\" : [\n")
         f.write(self.defender_position_nodes)
         #for defender in self.defender_position_nodes :
@@ -138,3 +144,29 @@ class Shot:
 #    def __init__(self, defender, shot):
 #        self.defender = defender
 #        self.shot = shot
+
+
+
+
+#if (len(sys.argv) < 3):
+#    sys.exit("Usage: " + sys.argv[0] + " <problem.json> <solution.json>")
+
+if (len(sys.argv) < 2):
+    sys.exit("Usage: " + sys.argv[0] + " <problem.json>")
+
+problem_path = sys.argv[1]
+#mettre un solution_name
+
+with open(problem_path) as problem_file:
+    problem = Problem(json.load(problem_file))
+
+#with open(solution_path) as solution_file:
+#    solution = Solution(json.load(solution_file))
+
+graph = Graph(Board(problem, None))
+graph.computeDefending()
+graph.deleteUnnecessaryDefenders()
+print(graph.isSolution()) #faire qqch de cette info
+graph.WriteSolution()
+
+sys.exit()
