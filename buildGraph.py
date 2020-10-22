@@ -101,6 +101,16 @@ class Graph:
             return False
         return True
 
+    def WriteSolution(self):
+        f = open("computed_solution.json", "w")
+        f.write("{\n\t\"defenders\" : [\n")
+        f.write(self.defender_position_nodes)
+        #for defender in self.defender_position_nodes :
+        #    f.write(defender+",\n\t\t")
+        #f.write("\t]\n}")
+        f.write("\n}")
+        f.close()
+
 #class Point:
 #    def __init__(self,x,y):
 #        self.x = x
