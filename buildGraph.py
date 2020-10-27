@@ -60,7 +60,7 @@ class Graph:
                     shot.append_defender(defender)
                     #defending_edges.append(Defense(defender, shot))
 
-    def partition(self, arr, low, high):
+    """def partition(self, arr, low, high):
         i = (low-1)
         pivot = len(arr[high].defending_shots)
         for j in range(low, high):
@@ -80,11 +80,15 @@ class Graph:
 
     def verifySort(self):
         for defender in self.defender_position_nodes :
-            print(defender.defending_shots)
+            print(defender.defending_shots)"""
 
     def sortByDefendingShots(self):
-        self.quickSort(self.defender_position_nodes, 0, len(self.defender_position_nodes)-1)
-        self.verifySort()
+        #print("test 1\n")
+        #self.quickSort(self.defender_position_nodes, 0, len(self.defender_position_nodes)-1)
+        self.defender_position_nodes.sort(key=lambda defender: len(defender.defending_shots))
+        #print("test 3\n")
+        #self.verifySort()
+        #print("test 4\n")
 
     #def deleteNonDefenders():
     #    for defender in defender_position_nodes :
@@ -103,7 +107,7 @@ class Graph:
         verbose = False
         while defender_nb < len(self.defender_position_nodes) :
             defender = self.defender_position_nodes[defender_nb]
-            if defender.pos == [4.499999999999952, -0.10000000000002096] :
+            if defender.pos == [4.199999999999953, -0.2000000000000206] :
                 verbose = True
             if verbose :
                 print("defender_nb = "+str(defender_nb))
