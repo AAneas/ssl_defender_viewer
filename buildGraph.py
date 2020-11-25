@@ -21,13 +21,10 @@ class Graph:
         self.opponents_and_shots = {}
         self.onTargetShots()
         self.defender_position_nodes = []
-        self.everyGridPosition(self.defender_position_nodes)
+        self.everyGridPosition()
         self.computeDefending()
         self.sortByDefendingShots()
         self.defender_position_nodes_close_to_opponent = self.defender_position_nodes.copy()
-        self.defender_with_distance = None
-        self.collisionMostDefending = False
-        self.collisionCloseToOpponent = False
         ###self.defending_edges = []
         #self.computeDefending()
         #self.deleteUnnecessaryDefenders()
@@ -92,8 +89,8 @@ class Graph:
         elif self.board.problem.min_dist :
             self.dist = self.board.problem.min_dist
 
-    def everyGridPosition(self, def_list): # faire fonction plus économique dans laquelle on ne vérifie que les points de la grille dans le range du tir
-        def_list.clear()
+    def everyGridPosition(self): # faire fonction plus économique dans laquelle on ne vérifie que les points de la grille dans le range du tir
+        self.defender_position_nodes.clear()
         ps = self.board.problem.pos_step
             #while ps < dist :
             #    ps = ps + self.board.problem.pos_step # afin de faire un grille G' où l'on est sûr d'être assez espacé, peut-être à enlever pour vérifier à chaque fois qu'on place un défenseur qu'il n'en touche pas un autre
@@ -104,7 +101,7 @@ class Graph:
             for y in numpy.arange(0-h, h+ps, ps) :
                 if self.isTooCloseToAnOpponent(x, y) == False :
                     d = Defender([x,y])
-                    def_list.append(d)
+                    self.defender_position_nodes.append(d)
 
     def isDefending(self, defender, shot):
         if segmentCircleIntersection(shot.pos, shot.intersection_with_goal, defender.pos, self.board.problem.robot_radius) is not None :
@@ -252,28 +249,15 @@ class Graph:
         for s in self.shot_on_target_nodes :
             s.defenders = []
 
-    def retryMostDefendingWithoutDistance(self):
-        if not self.areAllShotsDefended() :
-            self.collisionMostDefending = True
+    def retryWithoutExtensions(self):
+        if (not self.areAllShotsDefended()) and self.opponents_and_shots :
             self.dist = 0.0
             self.resetShotsDefenders()
-            self.everyGridPosition(self.defender_position_nodes)
+            self.everyGridPosition()
             self.computeDefending()
             self.sortByDefendingShots()
-            self.defender_with_distance = self.defender_position_nodes.copy()
+            self.defender_position_nodes_close_to_opponent = self.defender_position_nodes.copy()
             self.keepMostDefending()
-
-    def retryCloseToOpponentWithoutDistance(self):
-        if self.opponents_and_shots :
-            self.collisionCloseToOpponent = True
-            self.dist = 0.0
-            if self.defender_with_distance is not None :
-                self.defender_position_nodes_close_to_opponent = self.defender_with_distance
-            else :
-                self.everyGridPosition(self.defender_position_nodes_close_to_opponent)
-                self.computeDefending()
-                self.sortByDefendingShots()
-                #self.defender_position_nodes_close_to_opponent = self.defender_position_nodes.copy()
             self.closeToOpponent()
     
     def chooseAnswer(self):
@@ -285,18 +269,16 @@ class Graph:
         #print("choice : ")
         #print(len(self.defender_position_nodes))
         #print(len(self.defender_position_nodes_close_to_opponent))
-        if self.collisionMostDefending and self.collisionCloseToOpponent == False :
+        self.retryWithoutExtensions()
+        if (len(self.defender_position_nodes) == 0) : # si on n'a pas trouvé de défenseurs avec la méthode de défendre le plus de tirs possibles mais qu'on en a trouvé avec la méthode de couvrir tous les tirs d'un attaquant, alors on prend le résultat de la deuxième méthode
             self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
-        elif (self.collisionMostDefending == self.collisionCloseToOpponent) and len(self.defender_position_nodes_close_to_opponent) != 0 :
-            if (len(self.defender_position_nodes) == 0) : # si on n'a pas trouvé de défenseurs avec la méthode de défendre le plus de tirs possibles mais qu'on en a trouvé avec la méthode de couvrir tous les tirs d'un attaquant, alors on prend le résultat de la deuxième méthode
-                self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
-            elif((self.areAllShotsDefended() and (not self.opponents_and_shots)) or ((not self.areAllShotsDefended()) and self.opponents_and_shots)) : # si on a trouvé une solution avec les deux méthodes, ou qu'on n'a trouvé aucune solution avec les deux solutions, alors on prend la solution qui demande le moins de défenseurs ; il faudra peut-être changer ça quand on gèrera l'extension avec le fait que les défenseurs ne se téléportent pas pour réduire la distance à parcourir 
-                if (len(self.defender_position_nodes_close_to_opponent) < len(self.defender_position_nodes)) :
-                    self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
-                    #print("choice 2")
-            elif ((not self.areAllShotsDefended()) and (not self.opponents_and_shots)) : # si la méthode 1 ne défend pas tous les tirs alors que la méthode 2 si, alors on garde la méthode 2
+        elif((self.areAllShotsDefended() and (not self.opponents_and_shots)) or ((not self.areAllShotsDefended()) and self.opponents_and_shots)) : # si on a trouvé une solution avec les deux méthodes, ou qu'on n'a trouvé aucune solution avec les deux méthodes, alors on prend la solution qui demande le moins de défenseurs ; il faudra peut-être changer ça quand on gèrera l'extension avec le fait que les défenseurs ne se téléportent pas pour réduire la distance à parcourir 
+            if (len(self.defender_position_nodes_close_to_opponent) < len(self.defender_position_nodes)) :
                 self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
                 #print("choice 2")
+        elif ((not self.areAllShotsDefended()) and (not self.opponents_and_shots)) : # si la méthode 1 ne défend pas tous les tirs alors que la méthode 2 si, alors on garde la méthode 2
+            self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
+            #print("choice 2")
         # dans tous les autres cas, on garde la méthode 1 (donc pas besoin de remplacer le résultat 1 par le 2)
         #print(len(self.defender_position_nodes))
         #print(len(self.defender_position_nodes_close_to_opponent))
@@ -389,10 +371,6 @@ else :
 graph.keepMostDefending()
 
 graph.closeToOpponent()
-
-graph.retryMostDefendingWithoutDistance()
-
-graph.retryCloseToOpponentWithoutDistance()
 
 graph.chooseAnswer()
 
