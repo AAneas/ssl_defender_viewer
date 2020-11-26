@@ -10,11 +10,98 @@ import sys
 import json
 from board import *
 
+def computeStart(lower_limit, ps):
+        s = 0
+        while s >= lower_limit :
+            s = s - ps
+        return s + ps
+
+def calculateDistance(x1, y1, x2, y2): #  taken from https://community.esri.com/thread/158038
+    dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)  
+    return dist
+
+def cutList(node_list, index, cond):
+    if (cond) or (len(node_list[index].defending_shots) == 0) :
+        #print(str(cond))
+        #print(str(len(node_list[index].defending_shots)))
+        #print(str(index))
+        #print(str(len(node_list)))
+        node_list[:] = node_list[:index]
+        #print(str(len(node_list)))
+        return True
+    return False
+
+def permutations(iterable): # taken then modified from https://docs.python.org/3/library/itertools.html#itertools.permutations # vérifier que ça fonctionne avec les modifications
+    pool = tuple(iterable)
+    n = len(pool)
+    indices = list(range(n))
+    cycles = list(range(n, 0, -1))
+    yield tuple(pool[i] for i in indices[:n])
+    while n:
+        for i in reversed(range(n)):
+            cycles[i] -= 1
+            if cycles[i] == 0:
+                indices[i:] = indices[i+1:] + indices[i:i+1]
+                cycles[i] = n - i
+            else:
+                j = cycles[i]
+                if(pool[indices[i]] != pool[indices[-j]]):
+                    indices[i], indices[-j] = indices[-j], indices[i]
+                    yield tuple(pool[i] for i in indices[:n])
+                    break
+        else:
+            return
+
+def listFillWithDefenders(final_list, length, start) :
+    for i in range(length-len(final_list)) :
+        final_list.append(start[i+len(final_list)])
+
+def listFillWithMinusOnes(final_list, length) :
+    for i in range(length-len(final_list)) :
+        final_list.append(-1)
+
+def changeMinusOnesToDefenders(start, end):
+    for index in range(len(end)) :
+        if end[index] == -1 :
+            end[index] = start[index]
+    
+def totalDistance(start, end):
+    total = 0
+    for defender_nb in range(len(end)) : #il faut qu'il n'y ait pas plus dans end que dans start
+        if end[defender_nb] != -1 :
+            total = total + calculateDistance(start[defender_nb].pos[0], start[defender_nb].pos[1], end[defender_nb].pos[0], end[defender_nb].pos[1])
+    return total
+
+def orderedByDistance(final_list, starting_pos, total_distance, current_list):
+    #sub_list = []
+    listFillWithMinusOnes(current_list, len(starting_pos))
+    perms = permutations(current_list)
+    for trying_current in perms :
+        new_dist = totalDistance(starting_pos, trying_current)
+        if new_dist < total_distance :
+            total_distance = new_dist
+            final_list[:] = trying_current[:]
+    return total_distance
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class Graph:
     def __init__(self, board):#, tirs cadrés, ):
         self.board = board
         self.dist = 0.0
         self.computeDist()
+        self.starting_pos = []
         self.nb_def = 8
         self.nbDefenders()
         self.shot_on_target_nodes = []
@@ -36,6 +123,8 @@ class Graph:
             if self.board.problem.defenders.any() :
                 if self.board.problem.defenders[0].any() :
                     self.nb_def = len(self.board.problem.defenders[0])
+                    for index in range(self.nb_def) :
+                        self.starting_pos.append(Defender([self.board.problem.defenders[0][index],self.board.problem.defenders[1][index]]))
                 else :
                     self.nb_def = 0
                     print("Either 0 defenders are allowed, or bad read")
@@ -56,10 +145,6 @@ class Graph:
                     kick_dir += self.board.problem.theta_step
             self.opponents_and_shots[str(opp_pos)] = nb_shots
 
-    def calculateDistance(self, x1, y1, x2, y2): #  taken from https://community.esri.com/thread/158038
-        dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)  
-        return dist
-
     def isTooCloseToADefender(self, nb_defs, def_list) :
         if self.dist == 0.0 :
             return False
@@ -67,7 +152,7 @@ class Graph:
         y = def_list[nb_defs].pos[1]
         for nb_def in range(nb_defs) :
             def_pos = def_list[nb_def].pos
-            if self.calculateDistance(x,y,def_pos[0],def_pos[1]) < self.dist :
+            if calculateDistance(x,y,def_pos[0],def_pos[1]) < self.dist :
                 return True
         return False
 
@@ -76,7 +161,7 @@ class Graph:
             return False
         for opponent in range(self.board.problem.getNbOpponents()) :
             opp_pos = self.board.problem.getOpponent(opponent)
-            if self.calculateDistance(x,y,opp_pos[0],opp_pos[1]) < self.dist :
+            if calculateDistance(x,y,opp_pos[0],opp_pos[1]) < self.dist :
                 return True
         return False
             
@@ -92,13 +177,13 @@ class Graph:
     def everyGridPosition(self): # faire fonction plus économique dans laquelle on ne vérifie que les points de la grille dans le range du tir
         self.defender_position_nodes.clear()
         ps = self.board.problem.pos_step
-            #while ps < dist :
-            #    ps = ps + self.board.problem.pos_step # afin de faire un grille G' où l'on est sûr d'être assez espacé, peut-être à enlever pour vérifier à chaque fois qu'on place un défenseur qu'il n'en touche pas un autre
-        w = self.board.problem.getFieldWidth()
-        h = self.board.problem.getFieldHeight()
+        #while ps < dist :
+        #    ps = ps + self.board.problem.pos_step # afin de faire un grille G' où l'on est sûr d'être assez espacé, peut-être à enlever pour vérifier à chaque fois qu'on place un défenseur qu'il n'en touche pas un autre
         #rr = self.board.problem.robot_radius
-        for x in numpy.arange(0-w, w+ps, ps) :
-            for y in numpy.arange(0-h, h+ps, ps) :
+        width_start = computeStart(self.board.problem.field_limits[0, 0], ps)
+        height_start = computeStart(self.board.problem.field_limits[1, 0], ps)
+        for x in numpy.arange(width_start, self.board.problem.field_limits[0, 1]+ps, ps) :
+            for y in numpy.arange(height_start, self.board.problem.field_limits[1, 1]+ps, ps) :
                 if self.isTooCloseToAnOpponent(x, y) == False :
                     d = Defender([x,y])
                     self.defender_position_nodes.append(d)
@@ -146,7 +231,7 @@ class Graph:
     
     
     # tester une version où on prend dans l'ordre des défenseurs avec le plus de buts, on retient ceux qui défendent un but qu'on a encore jamais couvert
-    # et dans le cas où on fait attention à la distance : on ne l'ajoute pas s'il est trop proche d'un déjà pris ; et si jamais on a le temps on pourrait essayer de coder un programme qui une fois qu'on a fini cette fonction, vérifie pour tous les buts non protégés si on ne peut pas ajouter un défenseur qui le défend et remplacer les défenseurs qui entrent en collision avec le nouveau par d'autres défenseurs qui couvrent les mêmes buts mais sont suffisamment espacés 
+    # et dans le cas où on fait attention à la distance : on ne l'ajoute pas s'il est trop proche d'un déjà pris ; et si jamais on a le temps on pourrait essayer de coder un programme qui une fois qu'on a fini cette fonction, vérifie pour tous les buts non protégés si on ne peut pas ajouter un défenseur qui le défend et remplacer les défenseurs qui entrent en collision avec le nouveau par d'autres défenseurs qui couvrent les mêmes buts mais sont suffisamment espacés
     
     def notDefended(self, defender_nb) :
         shots = self.defender_position_nodes[defender_nb].defending_shots[:]
@@ -162,6 +247,8 @@ class Graph:
     def keepMostDefending(self) :
         defender_nb = 0
         while defender_nb < len(self.defender_position_nodes) :
+            if cutList(self.defender_position_nodes, defender_nb, self.areAllShotsDefended()) :
+                break
             defender = self.defender_position_nodes[defender_nb]
             if (self.notDefended(defender_nb) is None) or (any(self.notDefended(defender_nb)) == False) or (self.isTooCloseToAnOpponent(defender.pos[0], defender.pos[1])) or (self.isTooCloseToADefender(defender_nb, self.defender_position_nodes)) :
                 #for shot in defender.defending_shots : # à vérifier mais je crois que je n'en ai plus besoin
@@ -216,7 +303,7 @@ class Graph:
         #for def_pos in self.defender_position_nodes_close_to_opponent
         index = 0
         while index < len(self.defender_position_nodes_close_to_opponent) :
-            if self.opponents_and_shots is None :
+            if (self.opponents_and_shots is None) or (cutList(self.defender_position_nodes_close_to_opponent, index, not self.opponents_and_shots)) :
                 break
             defender = self.defender_position_nodes_close_to_opponent[index]
             if (self.isTooCloseToAnOpponent(defender.pos[0], defender.pos[1]) == False) and (self.isTooCloseToADefender(index, self.defender_position_nodes_close_to_opponent) == False) :
@@ -250,6 +337,8 @@ class Graph:
             s.defenders = []
 
     def retryWithoutExtensions(self):
+        #print(self.areAllShotsDefended())
+        #print(self.opponents_and_shots)
         if (not self.areAllShotsDefended()) and self.opponents_and_shots :
             self.dist = 0.0
             self.resetShotsDefenders()
@@ -259,6 +348,20 @@ class Graph:
             self.defender_position_nodes_close_to_opponent = self.defender_position_nodes.copy()
             self.keepMostDefending()
             self.closeToOpponent()
+            #print(str(len(self.defender_position_nodes)))
+            #print(str(len(self.defender_position_nodes_close_to_opponent)))
+        
+    def orderingTwoMethods(self):
+        listFillWithDefenders(self.defender_position_nodes, len(self.starting_pos), self.starting_pos)
+        total_distance = totalDistance(self.starting_pos, self.defender_position_nodes)
+        total_distance = orderedByDistance(self.defender_position_nodes, self.starting_pos, total_distance, self.defender_position_nodes[:])
+        listFillWithDefenders(self.defender_position_nodes_close_to_opponent, len(self.starting_pos), self.starting_pos)
+        orderedByDistance(self.defender_position_nodes, self.starting_pos, total_distance, self.defender_position_nodes_close_to_opponent)
+
+    def orderingOneMethod(self):
+        listFillWithDefenders(self.defender_position_nodes, len(self.starting_pos), self.starting_pos)
+        total_distance = totalDistance(self.starting_pos, self.defender_position_nodes)
+        orderedByDistance(self.defender_position_nodes, self.starting_pos, total_distance, self.defender_position_nodes[:])
     
     def chooseAnswer(self):
         #print("choosing")
@@ -271,20 +374,36 @@ class Graph:
         #print(len(self.defender_position_nodes_close_to_opponent))
         self.retryWithoutExtensions()
         if (len(self.defender_position_nodes) == 0) : # si on n'a pas trouvé de défenseurs avec la méthode de défendre le plus de tirs possibles mais qu'on en a trouvé avec la méthode de couvrir tous les tirs d'un attaquant, alors on prend le résultat de la deuxième méthode
+            #self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
             self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
-        elif((self.areAllShotsDefended() and (not self.opponents_and_shots)) or ((not self.areAllShotsDefended()) and self.opponents_and_shots)) : # si on a trouvé une solution avec les deux méthodes, ou qu'on n'a trouvé aucune solution avec les deux méthodes, alors on prend la solution qui demande le moins de défenseurs ; il faudra peut-être changer ça quand on gèrera l'extension avec le fait que les défenseurs ne se téléportent pas pour réduire la distance à parcourir 
-            if (len(self.defender_position_nodes_close_to_opponent) < len(self.defender_position_nodes)) :
-                self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
+            if self.starting_pos != [] :
+                self.orderingOneMethod()
+        elif((self.areAllShotsDefended() and (not self.opponents_and_shots)) or ((not self.areAllShotsDefended()) and self.opponents_and_shots)) : # si on a trouvé une solution avec les deux méthodes, ou qu'on n'a trouvé aucune solution avec les deux méthodes, alors on prend la solution qui demande le moins de défenseurs ; il faudra peut-être changer ça quand on gèrera l'extension avec le fait que les défenseurs ne se téléportent pas pour réduire la distance à parcourir
+            if self.starting_pos == [] :
+                if (len(self.defender_position_nodes_close_to_opponent) < len(self.defender_position_nodes)) :
+                    self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
+            else :
+                self.orderingTwoMethods()
+            #if (len(self.defender_position_nodes_close_to_opponent) < len(self.defender_position_nodes)) :
+            #    self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
                 #print("choice 2")
         elif ((not self.areAllShotsDefended()) and (not self.opponents_and_shots)) : # si la méthode 1 ne défend pas tous les tirs alors que la méthode 2 si, alors on garde la méthode 2
+            #self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
             self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
+            if self.starting_pos != [] :
+                self.orderingOneMethod()
+        else :
+            if self.starting_pos != [] :
+                self.orderingOneMethod()
             #print("choice 2")
         # dans tous les autres cas, on garde la méthode 1 (donc pas besoin de remplacer le résultat 1 par le 2)
         #print(len(self.defender_position_nodes))
         #print(len(self.defender_position_nodes_close_to_opponent))
 
     def areAllShotsDefended(self):
+        #print(str(len(self.shot_on_target_nodes)))
         for shot in self.shot_on_target_nodes :
+            #print(str(len(shot.defenders)))
             if not shot.defenders :
                 print("shot at"+str(shot.pos)+" is not defended") # en faire qqch
                 return False
@@ -293,7 +412,7 @@ class Graph:
     def isSolution(self):
         if len(self.defender_position_nodes) == 0 :
             print("No defender found")
-        if not self.areAllShotsDefended():
+        if not self.areAllShotsDefended(): # attention, maintenant il y a deuxième solution, je crois que cette fonction n'a été faite que pour la première méthode
             return False 
         #if len(self.defender_position_nodes) > self.board.problem.getNbOpponents():
         #print(str(len(self.defender_position_nodes))+" > "+str(self.nb_def))
@@ -370,9 +489,15 @@ else :
 
 graph.keepMostDefending()
 
+#print(str(len(graph.defender_position_nodes)))
+
 graph.closeToOpponent()
 
+#print(str(len(graph.defender_position_nodes_close_to_opponent)))
+
 graph.chooseAnswer()
+
+changeMinusOnesToDefenders(graph.starting_pos, graph.defender_position_nodes)
 
 print(graph.isSolution()) #faire qqch de cette info
 
@@ -381,3 +506,54 @@ graph.writeSolution()
 #graph.verifySort()
 
 sys.exit()
+
+
+
+
+
+
+
+
+# *Note concernant l'algorithme :
+# Pour l'instant on essaye deux méthodes en y appliquant des contraintes (extensions), si aucune ne donne de bon résultat on retente sans contrainte, à la fin on renvoit le meilleur résultat trouvé
+# Il est possible que dans le futur en changeant nos algorithmes on n'ait plus besoin de réessayer sans contrainte mais je pense qu'on devrait les laisser dans le doute et le préciser dans le rapport et la présentation
+# -Méthode 1 (keepMostDefending) : On garde parmi toutes les positions défendues, celles qui défendent le plus de tirs (s'il y a au moins un tir qui n'est pas déjà défendu par une autre position que l'on a décidé de garder)
+# -Méthode 2 (closeToOpponent) : On parcourt les positions défendues pour essayer de trouver des positions qui défendent tous les tirs d'un attaquant (se placer proche d'un attaquant permet souvent de couvrir beaucoup de tirs avec peu de défenseurs)
+# -Eventuelle méthode 3 (closeToGoal) : Parcourir les positions défendues pour essayer de trouver des positions qui défendent tous les tirs menant à une cage de but (mais je pense que finalement, cela ferait un peu doublon avec la méthode 1, et lorsqu'on devra implémenter la zone de gardien de but elle ne servira plus trop)
+
+# *Améliorations possibles concernant les algorithmes utilisés :
+# -Avant les méthodes : pour l'instant nous générons toutes les positions de la grille possibles, il faudrait ne générer que celles qui se trouvent sur les trajectoires de tirs (parcourir la trajectoire puis faire un if x % qqch = sur la grille, en utilisant pos_step ou ps par exemple)
+# -Pendant (vers la fin) les méthodes : pour l'instant nous prenons les premiers défenseurs qui nous parraissent pertinent selon les critères de l'algorithmes, mais nous ne revenons pas en arrière pour les échanger avec d'autres défenseurs si la méthode n'a pas fonctionné (par exemple en prenant les deux première positions alors il n'y a plus de position sans collision permettant de couvrir un tir, alors enlever le premier défenseur pris et en ajouter deux autres à des positions ne causant pas de collisions) (problème : compléxité à coder, mais surtout explosion en temps de l'algorithme et peut-être en mémoire selon comment c'est codé)
+# -Dès le début du programme : éventuellement pouvoir prendre des -options afin de préciser si on veut utiliser toutes les extensions, aucunes ou certaines
+# -Attention, j'ai considéré qu'un résultat qui demandait plus de défenseurs que précisés dans le fichier de problem.json s'ils sont précisés, ou plus de 8 sinon (nombre dans Small-Size League division A), était un résultat invalide, on pourra en discuter si vous voulez, par exemple pour ajouter un paramètre permettant de passer en division B avec seulement 6 défenseurs (ou d'entrer le nombre de défenseurs voulus)
+
+# *Extensions réalisées :
+# -Distance minimale entre les robots : gérée avec isTooCloseToADefender() et isTooCloseToAnOpponent(), que j'ai préféré utiliser plutôt que d'aggrandir les mailles de la grille parce que je trouvais que ça enlevait beaucoup trop de possibilités de placement des défenseurs, mais cela réduirait le nombre de positions à vérifier (pour l'instant gain de précision plutôt que de temps)
+# -Plusieurs buts : elle s'est réglée d'elle-même avec l'algortihme implanté, éventuellement faire attention si on modifie l'implémentation (par exemple avec l'extention zone du gardien)
+
+# *Extentions à réaliser :
+# -Gardien : il suffit d'ajouter une variable, de la modifier lorsqu'un gardien est choisi, puis de ne plus autoriser à prendre de gardien si elle est à False, ou plutôt faire un tableau de booléens car fusionner ça avec extension multigoal (demander au prof si multi goalkeeper zones possible, si multigoalkeeper possibles ou si un seul gp pour toutes les zones, et si le goalkeeper a le droit de sortir de sa zone)
+# -Position initiale des joueurs : pour l'instant on peut choisir parmi les deux résultats trouvés lequel demande la plus petite distance à parcourir, et assigner au bon défenseur la bonne position mais il reste encore à faire attention à la zone de gardien de but, les non-gardiens ne doivent pas pouvoir y entrer
+# -Trajectoires courbées : il faudra coder ça dans les fichiers donnés ? si c'est le cas, peut-être qu'une fois que ce sera fait, notre algortihme fonctionnera déjà pour les trajectoires courbes sans avoir à le modifier, à voir
+
+# *Tests : pour l'instant j'ai juste lancé les fichiers d'exemple et vérifié que ça fonctionnait pour eux, mais on devrait automatiser les tests
+
+
+
+
+# *Bugs à régler : à force de moodifier le code sans me souvenir exactement ce qui fait quoi, j'ai fini par casser l'utilité de areAllShotsDefended(), il faudrait que je le recode computeDefending(), penser que maintenant on fait les trucs dans l'autre sens et que j'ai supprimé le fait d'enlever petit à petit de shot.defenders (à remettre sûrement) et que j'ai décidé de pouvoir couper d'un coup toute la fin de la liste, donc à voir si en le recodant je peux lui donner un index auquel s'arrêter ; aussi faire attention à l'importance de areAllShotsDefended() dans isSolution() pour ne pas afficher de mauvais résultats
+
+
+
+
+
+
+
+
+# *Questions à poser au professeur :
+# -Concernant l'extension du gardien de but :
+# --Peut-il y avoir plusieurs zones de gardiens de but (par exemple avec l'entension de plusieurs cages de but),
+# --si oui, est-ce que chaque zone a un gardien ou est-ce qu'il n'y a qu'un seul gardien par équipe.
+# --Le gardien peut-il sortir de sa zone de gardien ?
+# --Est-ce qu'avec l'extension de la position initiale des joueurs, est-ce qu'il faut juste que dans le fichier de solution on n'ait qu'un seul défenseur maximum dans la zone de gardien, ou est-ce qu'on doit faire attention à ce qu'aucun non-gardien n'entre dans la zone lors de son déplacement et qu'il n'y a pas un défenseur qui devient gardien et gardien qui devient défenseur
+# -Concernant l'implémentation de la méthode gloutonne, est-ce qu'on doit parcourir toutes les possibilités de placement de défenseurs jusqu'à en trouver une qui répond à tous les critères (arrêter tous les buts + entensions) ?
