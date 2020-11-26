@@ -2,6 +2,27 @@
 # puis regarder computed_solution.json
 # finalement vérifier avec : python3 ./main.py ./configs/basic_problem_1.json ./configs/computed_solution.json
 
+"""
+python3 ./buildGraph.py ./configs/basic_problem_1.json
+python3 ./main.py ./configs/basic_problem_1.json ./configs/computed_solution.json
+
+python3 ./buildGraph.py ./configs/basic_problem_2.json
+python3 ./main.py ./configs/basic_problem_2.json ./configs/computed_solution.json
+
+python3 ./buildGraph.py ./configs/goal_keeper_problem_1.json
+python3 ./main.py ./configs/goal_keeper_problem_1.json ./configs/computed_solution.json
+
+python3 ./buildGraph.py ./configs/initial_defenders_problem_1.json
+python3 ./main.py ./configs/initial_defenders_problem_1.json ./configs/computed_solution.json
+
+python3 ./buildGraph.py ./configs/min_dist_problem_1.json
+python3 ./main.py ./configs/min_dist_problem_1.json ./configs/computed_solution.json
+
+python3 ./buildGraph.py ./configs/multigoal_problem_1.json
+python3 ./main.py ./configs/multigoal_problem_1.json ./configs/computed_solution.json
+
+"""
+
 import goal
 from geometry import segmentCircleIntersection
 #import board.py
@@ -67,7 +88,13 @@ def changeMinusOnesToDefenders(start, end):
     
 def totalDistance(start, end):
     total = 0
+    #print(str(start))
+    #print(str(len(start)))
+    #print(str(end))
+    #print(str(len(end)))
     for defender_nb in range(len(end)) : #il faut qu'il n'y ait pas plus dans end que dans start
+        #print(str(defender_nb))
+        #print(str(start[defender_nb]))
         if end[defender_nb] != -1 :
             total = total + calculateDistance(start[defender_nb].pos[0], start[defender_nb].pos[1], end[defender_nb].pos[0], end[defender_nb].pos[1])
     return total
@@ -198,20 +225,43 @@ class Graph:
             for defender in self.defender_position_nodes :
                 if self.isDefending(defender, shot) :
                     defender.append_shot(shot)
-                    shot.append_defender(defender)
+                    #shot.append_defender(defender)
                     #defending_edges.append(Defense(defender, shot))
 
-    #def verifySort(self):
+    """def verifySort(self):
         #print("Verify sort :")
-        #for defender in self.defender_position_nodes :
-            #print(len(defender.defending_shots))
+        for defender in self.defender_position_nodes :
+            if len(defender.defending_shots) == 0 :
+                sys.exit()
+            print(str(defender.pos))
+            print(len(defender.defending_shots))
+            print(str(self.closestOpponentDistance(defender)))
             #if len(defender.defending_shots) == 11 :
             #    print(defender.pos)
+        #for i in self.defender_position_nodes :
+        #    if len(i.defending_shots) != 0 :
+        #        print(str(len(i.defending_shots)))
+        #    else : sys.exit()"""
+
+    def closestOpponentDistance(self, defender):
+        opp_pos = self.board.problem.getOpponent(0)
+        dist = calculateDistance(opp_pos[0], opp_pos[1], defender.pos[0], defender.pos[1])
+        for opp_id in range(1,self.board.problem.getNbOpponents()) :
+            opp_pos = self.board.problem.getOpponent(opp_id)
+            new_dist = calculateDistance(opp_pos[0], opp_pos[1], defender.pos[0], defender.pos[1])
+            if new_dist < dist :
+                dist = new_dist
+        return dist
+
 
     def sortByDefendingShots(self):
         #print("test 1\n")
         #self.quickSort(self.defender_position_nodes, 0, len(self.defender_position_nodes)-1)
+        self.defender_position_nodes.sort(key=lambda defender: self.closestOpponentDistance(defender))
         self.defender_position_nodes.sort(key=lambda defender: len(defender.defending_shots), reverse=True)
+        #self.defender_position_nodes = self.defender_position_nodes[1:]
+        #print(str(self.defender_position_nodes[0].pos))
+        #print(str(self.closestOpponentDistance(self.defender_position_nodes[0])))
         #print("test 3\n")
         #self.verifySort()
         #print("test 4\n")
@@ -233,8 +283,12 @@ class Graph:
     # tester une version où on prend dans l'ordre des défenseurs avec le plus de buts, on retient ceux qui défendent un but qu'on a encore jamais couvert
     # et dans le cas où on fait attention à la distance : on ne l'ajoute pas s'il est trop proche d'un déjà pris ; et si jamais on a le temps on pourrait essayer de coder un programme qui une fois qu'on a fini cette fonction, vérifie pour tous les buts non protégés si on ne peut pas ajouter un défenseur qui le défend et remplacer les défenseurs qui entrent en collision avec le nouveau par d'autres défenseurs qui couvrent les mêmes buts mais sont suffisamment espacés
     
-    def notDefended(self, defender_nb) :
-        shots = self.defender_position_nodes[defender_nb].defending_shots[:]
+    def notDefended(self, defender_nb, all) :
+        shots = None
+        if all :
+            shots = self.shot_on_target_nodes[:]
+        else :
+            shots = self.defender_position_nodes[defender_nb].defending_shots[:]
         for index in range(defender_nb) :
             if shots is None :
                 break
@@ -247,10 +301,10 @@ class Graph:
     def keepMostDefending(self) :
         defender_nb = 0
         while defender_nb < len(self.defender_position_nodes) :
-            if cutList(self.defender_position_nodes, defender_nb, self.areAllShotsDefended()) :
+            if cutList(self.defender_position_nodes, defender_nb, self.notDefended(defender_nb, True) is None) :
                 break
             defender = self.defender_position_nodes[defender_nb]
-            if (self.notDefended(defender_nb) is None) or (any(self.notDefended(defender_nb)) == False) or (self.isTooCloseToAnOpponent(defender.pos[0], defender.pos[1])) or (self.isTooCloseToADefender(defender_nb, self.defender_position_nodes)) :
+            if (self.notDefended(defender_nb, False) is None) or (any(self.notDefended(defender_nb, False)) == False) or (self.isTooCloseToAnOpponent(defender.pos[0], defender.pos[1])) or (self.isTooCloseToADefender(defender_nb, self.defender_position_nodes)) :
                 #for shot in defender.defending_shots : # à vérifier mais je crois que je n'en ai plus besoin
                 #    shot.defenders.remove(defender)
                 self.defender_position_nodes.remove(defender)
@@ -335,12 +389,16 @@ class Graph:
     def resetShotsDefenders(self):
         for s in self.shot_on_target_nodes :
             s.defenders = []
-
+    
     def retryWithoutExtensions(self):
         #print(self.areAllShotsDefended())
         #print(self.opponents_and_shots)
-        if (not self.areAllShotsDefended()) and self.opponents_and_shots :
+        #print("retrying?")
+        if (not self.solutionOneWorked()) and (not self.solutionTwoWorked()) :
+            #print("yes")
+            #print()
             self.dist = 0.0
+            self.starting_pos = []
             self.resetShotsDefenders()
             self.everyGridPosition()
             self.computeDefending()
@@ -373,21 +431,21 @@ class Graph:
         #print(len(self.defender_position_nodes))
         #print(len(self.defender_position_nodes_close_to_opponent))
         self.retryWithoutExtensions()
-        if (len(self.defender_position_nodes) == 0) : # si on n'a pas trouvé de défenseurs avec la méthode de défendre le plus de tirs possibles mais qu'on en a trouvé avec la méthode de couvrir tous les tirs d'un attaquant, alors on prend le résultat de la deuxième méthode
+        #if (len(self.defender_position_nodes) == 0) : # si on n'a pas trouvé de défenseurs avec la méthode de défendre le plus de tirs possibles mais qu'on en a trouvé avec la méthode de couvrir tous les tirs d'un attaquant, alors on prend le résultat de la deuxième méthode
             #self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
-            self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
-            if self.starting_pos != [] :
-                self.orderingOneMethod()
-        elif((self.areAllShotsDefended() and (not self.opponents_and_shots)) or ((not self.areAllShotsDefended()) and self.opponents_and_shots)) : # si on a trouvé une solution avec les deux méthodes, ou qu'on n'a trouvé aucune solution avec les deux méthodes, alors on prend la solution qui demande le moins de défenseurs ; il faudra peut-être changer ça quand on gèrera l'extension avec le fait que les défenseurs ne se téléportent pas pour réduire la distance à parcourir
+            #self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
+            #if self.starting_pos != [] :
+            #    self.orderingOneMethod()
+        if((self.solutionOneWorked() and self.solutionTwoWorked()) or ((not self.solutionOneWorked()) and (not self.solutionTwoWorked()))) : # si on a trouvé une solution avec les deux méthodes, ou qu'on n'a trouvé aucune solution avec les deux méthodes, alors on prend la solution qui demande le moins de défenseurs si pas de start pos sinon celle qui demande le moins de déplacement
             if self.starting_pos == [] :
-                if (len(self.defender_position_nodes_close_to_opponent) < len(self.defender_position_nodes)) :
+                if (len(self.defender_position_nodes_close_to_opponent) < len(self.defender_position_nodes)) and (len(self.defender_position_nodes_close_to_opponent) > 0) :
                     self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
             else :
                 self.orderingTwoMethods()
             #if (len(self.defender_position_nodes_close_to_opponent) < len(self.defender_position_nodes)) :
             #    self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
                 #print("choice 2")
-        elif ((not self.areAllShotsDefended()) and (not self.opponents_and_shots)) : # si la méthode 1 ne défend pas tous les tirs alors que la méthode 2 si, alors on garde la méthode 2
+        elif ((not self.solutionOneWorked()) and (self.solutionTwoWorked())) : # si la méthode 1 ne défend pas tous les tirs alors que la méthode 2 si, alors on garde la méthode 2
             #self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
             self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
             if self.starting_pos != [] :
@@ -400,19 +458,33 @@ class Graph:
         #print(len(self.defender_position_nodes))
         #print(len(self.defender_position_nodes_close_to_opponent))
 
-    def areAllShotsDefended(self):
+    """def areAllShotsDefended(self):
         #print(str(len(self.shot_on_target_nodes)))
         for shot in self.shot_on_target_nodes :
             #print(str(len(shot.defenders)))
             if not shot.defenders :
                 print("shot at"+str(shot.pos)+" is not defended") # en faire qqch
                 return False
-        return True
+        return True"""
         
+    def solutionOneWorked(self):
+        if (len(self.defender_position_nodes) <= 0) :
+            return False
+        if (self.starting_pos != []) and (len(self.defender_position_nodes) > len(self.starting_pos)) :
+            return False
+        return (self.notDefended(len(self.defender_position_nodes), True) is not None)
+
+    def solutionTwoWorked(self):
+        if (len(self.defender_position_nodes_close_to_opponent) <= 0) :
+            return False
+        if (self.starting_pos != []) and (len(self.defender_position_nodes_close_to_opponent) > len(self.starting_pos)) :
+            return False
+        return (not self.opponents_and_shots)
+
     def isSolution(self):
         if len(self.defender_position_nodes) == 0 :
             print("No defender found")
-        if not self.areAllShotsDefended(): # attention, maintenant il y a deuxième solution, je crois que cette fonction n'a été faite que pour la première méthode
+        if not self.solutionOneWorked() : # attention, maintenant il y a deuxième solution, je crois que cette fonction n'a été faite que pour la première méthode
             return False 
         #if len(self.defender_position_nodes) > self.board.problem.getNbOpponents():
         #print(str(len(self.defender_position_nodes))+" > "+str(self.nb_def))
