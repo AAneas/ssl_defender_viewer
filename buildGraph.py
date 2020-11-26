@@ -115,13 +115,6 @@ def isBetween(start, end, pos) :
         return True
     return False
 
-def isInsideSquare(square, pos) :
-    if square is None :
-        return False
-    if isBetween(square[0][0], square[0][1], pos[0]) and isBetween(square[1][0], square[1][1], pos[1]) :
-        return True
-    return False
-
 
 
 
@@ -156,10 +149,23 @@ class Graph:
         #print(self.isSolution()) #faire qqch de cette info
         #self.WriteSolution()
 
+    def isInsideSquare(self, square, pos) :
+        if square is None :
+            return False
+        if isBetween(square[0][0], square[0][1], pos[0]) and isBetween(square[1][0], square[1][1], pos[1]) :
+            return True
+        p_hg = numpy.array([square[0][0], square[1][0]])
+        p_hd = numpy.array([square[0][1], square[1][0]])
+        p_bg = numpy.array([square[0][0], square[1][1]])
+        p_bd = numpy.array([square[0][1], square[1][1]])
+        if (segmentCircleIntersection(p_hg, p_hd, pos, self.board.problem.robot_radius) is not None) or (segmentCircleIntersection(p_hg, p_bg, pos, self.board.problem.robot_radius) is not None) or (segmentCircleIntersection(p_bd, p_bg, pos, self.board.problem.robot_radius) is not None) or (segmentCircleIntersection(p_bd, p_hd, pos, self.board.problem.robot_radius) is not None) : # prend en compte la hitbox du robot, demander si besoin de faire ça
+            return True
+        return False
+
     def canBePlaced(self,pos) :
         #print("can be placed?")
         #print(str(pos))
-        if isInsideSquare(self.board.problem.goalkeeper_area, pos) :
+        if self.isInsideSquare(self.board.problem.goalkeeper_area, pos) :
             #print("inside square")
             if self.alreadyOneGoalKeeper :
                 #print("but already keeper")
@@ -170,7 +176,7 @@ class Graph:
     def newGoalKeeper(self,pos) :
         #print("new gp?")
         #print(str(pos))
-        if isInsideSquare(self.board.problem.goalkeeper_area, pos)  :
+        if self.isInsideSquare(self.board.problem.goalkeeper_area, pos)  :
             #print("yes")
             self.alreadyOneGoalKeeper = True
 
@@ -245,6 +251,8 @@ class Graph:
                     self.defender_position_nodes.append(d)
 
     def isDefending(self, defender, shot):
+        #print("shot.pos")
+        #print(shot.pos)
         if segmentCircleIntersection(shot.pos, shot.intersection_with_goal, defender.pos, self.board.problem.robot_radius) is not None :
             return True
         return False
@@ -635,10 +643,10 @@ sys.exit()
 # *Extensions réalisées :
 # -Distance minimale entre les robots : gérée avec isTooCloseToADefender() et isTooCloseToAnOpponent(), que j'ai préféré utiliser plutôt que d'aggrandir les mailles de la grille parce que je trouvais que ça enlevait beaucoup trop de possibilités de placement des défenseurs, mais cela réduirait le nombre de positions à vérifier (pour l'instant gain de précision plutôt que de temps)
 # -Position initiale des joueurs : c'est bon
+# -Gardien : c'est fait, on considère toute sa hitbox, si le milieu suffit alors on peut commenter un morceau de isInsideSquare et c'est bon
 # -Plusieurs buts : elle s'est réglée d'elle-même avec l'algortihme implanté, éventuellement faire attention si on modifie l'implémentation (par exemple avec l'extention zone du gardien)
 
 # *Extentions à réaliser :
-# -Gardien : c'est fait, mais pour l'instant on considère que si le milieu du robot n'est pas dans la zone de but c'est bon, peut-être qu'il faut considérer toute sa hitbox
 # -Trajectoires courbées : il faudra coder ça dans les fichiers donnés ? si c'est le cas, peut-être qu'une fois que ce sera fait, notre algortihme fonctionnera déjà pour les trajectoires courbes sans avoir à le modifier, à voir
 
 # *Tests : pour l'instant j'ai juste lancé les fichiers d'exemple et vérifié que ça fonctionnait pour eux, mais on devrait automatiser les tests
