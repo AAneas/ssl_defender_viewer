@@ -110,7 +110,17 @@ def orderedByDistance(final_list, starting_pos, total_distance, current_list):
             final_list[:] = trying_current[:]
     return total_distance
 
+def isBetween(start, end, pos) :
+    if (pos >= min(start,end)) and ((pos <= max(start,end))) :
+        return True
+    return False
 
+def isInsideSquare(square, pos) :
+    if square is None :
+        return False
+    if isBetween(square[0][0], square[0][1], pos[0]) and isBetween(square[1][0], square[1][1], pos[1]) :
+        return True
+    return False
 
 
 
@@ -127,6 +137,7 @@ class Graph:
     def __init__(self, board):#, tirs cadrés, ):
         self.board = board
         self.dist = 0.0
+        self.alreadyOneGoalKeeper = False
         self.computeDist()
         self.starting_pos = []
         self.nb_def = 8
@@ -144,6 +155,24 @@ class Graph:
         #self.deleteUnnecessaryDefenders()
         #print(self.isSolution()) #faire qqch de cette info
         #self.WriteSolution()
+
+    def canBePlaced(self,pos) :
+        #print("can be placed?")
+        #print(str(pos))
+        if isInsideSquare(self.board.problem.goalkeeper_area, pos) :
+            #print("inside square")
+            if self.alreadyOneGoalKeeper :
+                #print("but already keeper")
+                return False
+        #print("can be placed!")
+        return True
+
+    def newGoalKeeper(self,pos) :
+        #print("new gp?")
+        #print(str(pos))
+        if isInsideSquare(self.board.problem.goalkeeper_area, pos)  :
+            #print("yes")
+            self.alreadyOneGoalKeeper = True
 
     def nbDefenders(self):
         if self.board.problem.defenders is not None :
@@ -304,11 +333,12 @@ class Graph:
             if cutList(self.defender_position_nodes, defender_nb, self.notDefended(defender_nb, True) is None) :
                 break
             defender = self.defender_position_nodes[defender_nb]
-            if (self.notDefended(defender_nb, False) is None) or (any(self.notDefended(defender_nb, False)) == False) or (self.isTooCloseToAnOpponent(defender.pos[0], defender.pos[1])) or (self.isTooCloseToADefender(defender_nb, self.defender_position_nodes)) :
+            if (self.notDefended(defender_nb, False) is None) or (any(self.notDefended(defender_nb, False)) == False) or (self.isTooCloseToAnOpponent(defender.pos[0], defender.pos[1])) or (self.isTooCloseToADefender(defender_nb, self.defender_position_nodes)) or (not self.canBePlaced(defender.pos)) :
                 #for shot in defender.defending_shots : # à vérifier mais je crois que je n'en ai plus besoin
                 #    shot.defenders.remove(defender)
                 self.defender_position_nodes.remove(defender)
             else :
+                self.newGoalKeeper(defender.pos)
                 defender_nb = defender_nb + 1    
     
     """def deleteUnnecessaryDefenders(self):
@@ -355,12 +385,13 @@ class Graph:
         #while index >= 0 :
         #for index in range(len(self.defender_position_nodes_close_to_opponent))
         #for def_pos in self.defender_position_nodes_close_to_opponent
+        self.alreadyOneGoalKeeper = False
         index = 0
         while index < len(self.defender_position_nodes_close_to_opponent) :
             if (self.opponents_and_shots is None) or (cutList(self.defender_position_nodes_close_to_opponent, index, not self.opponents_and_shots)) :
                 break
             defender = self.defender_position_nodes_close_to_opponent[index]
-            if (self.isTooCloseToAnOpponent(defender.pos[0], defender.pos[1]) == False) and (self.isTooCloseToADefender(index, self.defender_position_nodes_close_to_opponent) == False) :
+            if (self.isTooCloseToAnOpponent(defender.pos[0], defender.pos[1]) == False) and (self.isTooCloseToADefender(index, self.defender_position_nodes_close_to_opponent) == False) and (self.canBePlaced(defender.pos)) :
                 defending_opponent = {}
                 for shot in defender.defending_shots :
                     if str(shot.pos) not in defending_opponent :
@@ -381,6 +412,7 @@ class Graph:
                     #del defender
                     self.defender_position_nodes_close_to_opponent.pop(index)
                 else :
+                    self.newGoalKeeper(defender.pos)
                     index = index + 1
             else :
                 #del defender
@@ -562,6 +594,7 @@ else :
 graph.keepMostDefending()
 
 #print(str(len(graph.defender_position_nodes)))
+#print("METHODE 2 COMMENCE ICI !!!")
 
 graph.closeToOpponent()
 
@@ -601,11 +634,11 @@ sys.exit()
 
 # *Extensions réalisées :
 # -Distance minimale entre les robots : gérée avec isTooCloseToADefender() et isTooCloseToAnOpponent(), que j'ai préféré utiliser plutôt que d'aggrandir les mailles de la grille parce que je trouvais que ça enlevait beaucoup trop de possibilités de placement des défenseurs, mais cela réduirait le nombre de positions à vérifier (pour l'instant gain de précision plutôt que de temps)
+# -Position initiale des joueurs : c'est bon
 # -Plusieurs buts : elle s'est réglée d'elle-même avec l'algortihme implanté, éventuellement faire attention si on modifie l'implémentation (par exemple avec l'extention zone du gardien)
 
 # *Extentions à réaliser :
-# -Gardien : il suffit d'ajouter une variable, de la modifier lorsqu'un gardien est choisi, puis de ne plus autoriser à prendre de gardien si elle est à False, ou plutôt faire un tableau de booléens car fusionner ça avec extension multigoal (demander au prof si multi goalkeeper zones possible, si multigoalkeeper possibles ou si un seul gp pour toutes les zones, et si le goalkeeper a le droit de sortir de sa zone)
-# -Position initiale des joueurs : pour l'instant on peut choisir parmi les deux résultats trouvés lequel demande la plus petite distance à parcourir, et assigner au bon défenseur la bonne position mais il reste encore à faire attention à la zone de gardien de but, les non-gardiens ne doivent pas pouvoir y entrer
+# -Gardien : c'est fait, mais pour l'instant on considère que si le milieu du robot n'est pas dans la zone de but c'est bon, peut-être qu'il faut considérer toute sa hitbox
 # -Trajectoires courbées : il faudra coder ça dans les fichiers donnés ? si c'est le cas, peut-être qu'une fois que ce sera fait, notre algortihme fonctionnera déjà pour les trajectoires courbes sans avoir à le modifier, à voir
 
 # *Tests : pour l'instant j'ai juste lancé les fichiers d'exemple et vérifié que ça fonctionnait pour eux, mais on devrait automatiser les tests
