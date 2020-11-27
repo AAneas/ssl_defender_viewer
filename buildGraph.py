@@ -66,16 +66,16 @@ def permutations(iterable): # taken then modified from https://docs.python.org/3
                 cycles[i] = n - i
             else:
                 j = cycles[i]
-                if(pool[indices[i]] != pool[indices[-j]]):
-                    indices[i], indices[-j] = indices[-j], indices[i]
-                    yield tuple(pool[i] for i in indices[:n])
-                    break
+                #if(pool[indices[i]] != pool[indices[-j]]):
+                indices[i], indices[-j] = indices[-j], indices[i]
+                yield tuple(pool[i] for i in indices[:n])
+                break
         else:
             return
 
-def listFillWithDefenders(final_list, length, start) :
+"""def listFillWithDefenders(final_list, length, start) :
     for i in range(length-len(final_list)) :
-        final_list.append(start[i+len(final_list)])
+        final_list.append(start[i+len(final_list)])"""
 
 def listFillWithMinusOnes(final_list, length) :
     for i in range(length-len(final_list)) :
@@ -101,14 +101,28 @@ def totalDistance(start, end):
 
 def orderedByDistance(final_list, starting_pos, total_distance, current_list):
     #sub_list = []
+    #print(current_list)
     listFillWithMinusOnes(current_list, len(starting_pos))
+    #print(current_list)
     perms = permutations(current_list)
+    prev_perm = []
     for trying_current in perms :
-        new_dist = totalDistance(starting_pos, trying_current)
-        if new_dist < total_distance :
-            total_distance = new_dist
-            final_list[:] = trying_current[:]
+        #print(trying_current)
+        #print(prev_perm)
+        if trying_current != prev_perm :
+            prev_perm = trying_current[:]
+            #print(trying_current)
+            new_dist = totalDistance(starting_pos, trying_current)
+            #if (trying_current[1] != -1) and (trying_current[7] != -1) and (trying_current[9] != -1) :
+            #    print("before "+str(total_distance)+" now "+str(new_dist))
+            #    print(str(trying_current))
+            if new_dist < total_distance :
+                #print("from "+str(total_distance)+" to "+str(new_dist))
+                total_distance = new_dist
+                final_list[:] = trying_current[:]
     return total_distance
+
+    #orderedByDistance(self.defender_position_nodes, self.starting_pos, total_distance, self.defender_position_nodes_close_to_opponent)
 
 def isBetween(start, end, pos) :
     if (pos >= min(start,end)) and ((pos <= max(start,end))) :
@@ -450,14 +464,19 @@ class Graph:
             #print(str(len(self.defender_position_nodes_close_to_opponent)))
         
     def orderingTwoMethods(self):
-        listFillWithDefenders(self.defender_position_nodes, len(self.starting_pos), self.starting_pos)
+        #print("Two")
+        #listFillWithDefenders(self.defender_position_nodes, len(self.starting_pos), self.starting_pos)
+        listFillWithMinusOnes(self.defender_position_nodes, len(self.starting_pos))
         total_distance = totalDistance(self.starting_pos, self.defender_position_nodes)
         total_distance = orderedByDistance(self.defender_position_nodes, self.starting_pos, total_distance, self.defender_position_nodes[:])
-        listFillWithDefenders(self.defender_position_nodes_close_to_opponent, len(self.starting_pos), self.starting_pos)
+        #listFillWithDefenders(self.defender_position_nodes_close_to_opponent, len(self.starting_pos), self.starting_pos)
+        #print("ORDERING METHOD 2")
         orderedByDistance(self.defender_position_nodes, self.starting_pos, total_distance, self.defender_position_nodes_close_to_opponent)
 
     def orderingOneMethod(self):
-        listFillWithDefenders(self.defender_position_nodes, len(self.starting_pos), self.starting_pos)
+        #print("One")
+        #listFillWithDefenders(self.defender_position_nodes, len(self.starting_pos), self.starting_pos)
+        listFillWithMinusOnes(self.defender_position_nodes, len(self.starting_pos))
         total_distance = totalDistance(self.starting_pos, self.defender_position_nodes)
         orderedByDistance(self.defender_position_nodes, self.starting_pos, total_distance, self.defender_position_nodes[:])
     
@@ -642,7 +661,7 @@ sys.exit()
 
 # *Extensions réalisées :
 # -Distance minimale entre les robots : gérée avec isTooCloseToADefender() et isTooCloseToAnOpponent(), que j'ai préféré utiliser plutôt que d'aggrandir les mailles de la grille parce que je trouvais que ça enlevait beaucoup trop de possibilités de placement des défenseurs, mais cela réduirait le nombre de positions à vérifier (pour l'instant gain de précision plutôt que de temps)
-# -Position initiale des joueurs : c'est bon
+# -Position initiale des joueurs : c'est bon, attention à partir de 10 défenseurs l'algo devient vraiment long
 # -Gardien : c'est fait, on considère toute sa hitbox, si le milieu suffit alors on peut commenter un morceau de isInsideSquare et c'est bon
 # -Plusieurs buts : elle s'est réglée d'elle-même avec l'algortihme implanté, éventuellement faire attention si on modifie l'implémentation (par exemple avec l'extention zone du gardien)
 
