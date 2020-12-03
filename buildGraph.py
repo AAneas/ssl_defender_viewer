@@ -141,7 +141,7 @@ def isBetween(start, end, pos) :
 
 
 class Graph:
-    def __init__(self, board):#, tirs cadrés, ):
+    def __init__(self, board,solution_name):#, tirs cadrés, ):
         self.board = board
         self.dist = 0.0
         self.alreadyOneGoalKeeper = False
@@ -157,6 +157,7 @@ class Graph:
         self.computeDefending()
         self.sortByDefendingShots()
         self.defender_position_nodes_close_to_opponent = self.defender_position_nodes.copy()
+        self.sol_name = solution_name
         ###self.defending_edges = []
         #self.computeDefending()
         #self.deleteUnnecessaryDefenders()
@@ -553,7 +554,7 @@ class Graph:
         return True
 
     def writeSolution(self):
-        f = open("./configs/computed_solution.json", "w") # à voir si on met un nom modifiable par l'utilisateur
+        f = open("./configs/"+self.sol_name, "w") # à voir si on met un nom modifiable par l'utilisateur
         f.write("{\n\t\"defenders\" : [\n\t\t")
         comma = False
         for defender in self.defender_position_nodes :
@@ -604,17 +605,19 @@ if (len(sys.argv) != 2):
 problem_path = sys.argv[1]
 #mettre un solution_name
 
+solution_name ="sol_to_"+sys.argv[1].split("/")[2]
+ 
 with open(problem_path) as problem_file:
     problem = Problem(json.load(problem_file))
 
 if problem.defenders is not None :
     with open(problem_path) as problem_file:
         solution = Solution(json.load(problem_file))
-    graph = Graph(Board(problem, solution))
+    graph = Graph(Board(problem, solution),solution_name)
     #with open(solution_path) as solution_file:
     #    solution = Solution(json.load(solution_file))
 else :
-    graph = Graph(Board(problem, None))
+    graph = Graph(Board(problem, None),solution_name)
 
 #graph.deleteUnnecessaryDefenders()
 
