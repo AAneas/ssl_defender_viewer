@@ -220,7 +220,7 @@ class Graph:
                     goal_pos = goal.kickResult(opp_pos, kick_dir)
                     if goal_pos is not None :
                         nb_shots = nb_shots + 1
-                        s = Shot(opp_pos, kick_dir, goal_pos)
+                        s = OpponentShot(opp_pos, kick_dir)
                         self.shot_on_target_nodes.append(s)
                     kick_dir += self.board.problem.theta_step
             self.opponents_and_shots[str(opp_pos)] = nb_shots
@@ -271,9 +271,14 @@ class Graph:
     def isDefending(self, defender, shot):
         #print("shot.pos")
         #print(shot.pos)
-        if segmentCircleIntersection(shot.pos, shot.intersection_with_goal, defender.pos, self.board.problem.robot_radius) is not None :
+        defender_arr = np.array([[defender.pos[0]], [defender.pos[1]]])
+        kick_result = self.board.problem.computeShotResult(shot.pos, shot.angle, defender_arr)
+        if kick_result.result == ShotResult.INTERCEPTED :
             return True
         return False
+        #if segmentCircleIntersection(shot.pos, shot.intersection_with_goal, defender.pos, self.board.problem.robot_radius) is not None :
+        #    return True
+        #return False
 
     def computeDefending(self):
         for shot in self.shot_on_target_nodes :
@@ -581,12 +586,12 @@ class Defender:
     def append_shot(self, shot):
         self.defending_shots.append(shot)
 
-class Shot:
-    def __init__(self, pos, angle, goal_pos):#, defenders):
+class OpponentShot:
+    def __init__(self, pos, angle):#, goal_pos):#, defenders):
         self.pos = pos
         self.angle = angle
         self.defenders = []
-        self.intersection_with_goal = goal_pos
+        #self.intersection_with_goal = goal_pos
     
     def append_defender(self, defender):
         self.defenders.append(defender)
