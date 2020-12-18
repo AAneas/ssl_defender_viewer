@@ -49,3 +49,21 @@ def segmentCircleIntersection(seg_start, seg_end, circle_center, circle_radius):
     # Intersection is inside the circle, now going to the border in opposite direction of seg_dir
     offset_length = math.sqrt(circle_radius ** 2 - dist ** 2)  # Pythagore
     return normal_intersection - offset_length * seg_dir
+
+def linePointProjection(seg_start, seg_end, p):
+    e1 = seg_end - seg_start
+    e2 = p - seg_start
+    return seg_start + e1 * e1.dot(e2) / np.sum(e1**2)
+
+def segmentPointProjection(seg_start, seg_end, p):
+    # Step 1: checking that point is on the appropriate side
+    e1 = seg_end - seg_start
+    e2 = p - seg_start
+    if e1.dot(e2) < 0:
+        return seg_start
+    # Step 2: projecting point on segment
+    proj = seg_start + e1 * e1.dot(e2) / np.sum(e1**2)
+    # Step 3: checking that point is closer
+    if np.linalg.norm(e1) < np.linalg.norm(proj - seg_start):
+        return seg_end
+    return proj
