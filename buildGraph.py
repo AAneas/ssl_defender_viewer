@@ -34,6 +34,28 @@ import sys
 import json
 from board import *
 
+"""field_limits = [[-4.5,4.5], [-3,3]]
+goals = [[[[4.5, -0.5], [4.5,0.5]], [-1,0]]]
+opponents = [[0.5, 0.0], [-2.0, -2.0], [2, 1.0]]
+robot_radius = 0.09
+theta_step = 0.031416
+pos_step = 0.1
+goalkeeper_area = None
+defenders = None
+ball_max_speed = None
+robot_max_speed = None
+min_dist = None
+name = None"""
+
+opt_ga = True
+opt_d = True
+opt_ms = True
+opt_mi = True
+
+opt_kd = True
+opt_co = True
+opt_re = True
+
 def computeStart(lower_limit, ps):
         s = 0
         while s >= lower_limit :
@@ -144,7 +166,7 @@ def isBetween(start, end, pos) :
 
 
 class Graph:
-    def __init__(self, board,solution_name):#, tirs cadrés, ):
+    def __init__(self, board, solution_name):#, tirs cadrés, ):
         self.board = board
         self.dist = 0.0
         self.alreadyOneGoalKeeper = False
@@ -183,6 +205,8 @@ class Graph:
     def canBePlaced(self,pos) :
         #print("can be placed?")
         #print(str(pos))
+        if opt_ga == False :
+            return True
         if self.isInsideSquare(self.board.problem.goalkeeper_area, pos) :
             #print("inside square")
             if self.alreadyOneGoalKeeper :
@@ -199,7 +223,7 @@ class Graph:
             self.alreadyOneGoalKeeper = True
 
     def nbDefenders(self):
-        if self.board.problem.defenders is not None :
+        if (self.board.problem.defenders is not None) and (opt_d) :
             if self.board.problem.defenders.any() :
                 if self.board.problem.defenders[0].any() :
                     self.nb_def = len(self.board.problem.defenders[0])
@@ -248,10 +272,10 @@ class Graph:
     def computeDist(self):
         if self.board.problem.robot_radius :
             self.dist = self.board.problem.robot_radius * 2
-            if self.board.problem.min_dist :
+            if self.board.problem.min_dist and opt_mi :
                 if self.board.problem.min_dist > self.dist :
                     self.dist = self.board.problem.min_dist
-        elif self.board.problem.min_dist :
+        elif self.board.problem.min_dist and opt_mi :
             self.dist = self.board.problem.min_dist
 
     def everyGridPosition(self): # faire fonction plus économique dans laquelle on ne vérifie que les points de la grille dans le range du tir
@@ -457,9 +481,14 @@ class Graph:
         #print(self.areAllShotsDefended())
         #print(self.opponents_and_shots)
         #print("retrying?")
-        if (not self.solutionOneWorked()) and (not self.solutionTwoWorked()) :
+        if (not self.solutionOneWorked()) and (not self.solutionTwoWorked()) and opt_re :
             #print("yes")
             #print()
+            opt_ga = False
+            opt_d = False
+            opt_ms = False
+            opt_mi = False
+            #opt_re = False
             self.dist = 0.0
             self.starting_pos = []
             self.resetShotsDefenders()
@@ -467,8 +496,10 @@ class Graph:
             self.computeDefending()
             self.sortByDefendingShots()
             self.defender_position_nodes_close_to_opponent = self.defender_position_nodes.copy()
-            self.keepMostDefending()
-            self.closeToOpponent()
+            if opt_kd :
+                graph.keepMostDefending()
+            if opt_co :
+                graph.closeToOpponent()
             #print(str(len(self.defender_position_nodes)))
             #print(str(len(self.defender_position_nodes_close_to_opponent)))
         
@@ -607,17 +638,63 @@ class OpponentShot:
 #if (len(sys.argv) < 3):
 #    sys.exit("Usage: " + sys.argv[0] + " <problem.json> <solution.json>")
 
+#if (len(sys.argv) != 2):
+#    sys.exit("Usage: " + sys.argv[0] + " <problem.json>")
+
+if len(sys.argv) < 2 :
+    print("Pensez à ajouter un fichier de problème .json en entrée")
+    sys.exit()
+
+solution_name = "sol_to_"+sys.argv[1].split("/")[2]
+
 if (len(sys.argv) != 2):
-    sys.exit("Usage: " + sys.argv[0] + " <problem.json>")
+    if sys.argv[2] == "-h" :
+        print("Par défaut, le programme lance avec toutes les extensions possibles l'algo \"KeepMostDefending\" puis \"CloseToOpponent\" et compare le résultat des deux pour sélectionner la solution la plus optimale (demandant le moins de distance si extention défenseurs initiaux, ou demandant le moins de défenseurs sinon), si aucune solution n'est trouvée en prenant en compte les extensions, le programme est lancé à nouveau sans les extensions. Si vous voulez choisir uniquement certaines options vous pouvez les préciser.\n-kd : lance l'algo \"KeepMostDefending\"\n-co : lance l'algo \"CloseToOpponent\"\n-ga : prend on compte l'extension \"GoalkeeperArea\"\n-re : Recommence sans les extensions dans le cas où aucune solution n'est trouvée avec\n-d : prend on compte l'extension \"InitialDefenders\"\n-ms : prend on compte l'extension \"MaximalSpeed\"\n-mi : prend on compte l'extension \"MinDist\"\nIl n'y a pas d'option pour activer l'option \"MultiGoal\" car elle sera toujours active.\n-na : sans -na le nom de la solution sera sol_to_<problem>.json, avec il prendra la nom écrit juste après.\n\nPar exemple si vous voulez donner un nom au fichier de solution et garder le fait d'utiliser les deux algorithmes sur toutes les extensions et recommencer si besoin, vous pouvez écrire\n\tpython3 ./buildGraph.py ./configs/every_extension_problem.json -na ma_solution -kd -co -re -ga -d -ms -mi")
+        sys.exit()
+    opt_ga = False
+    opt_d = False
+    opt_ms = False
+    opt_mi = False
+    opt_kd = False
+    opt_co = False
+    opt_re = False
+
+    solution_name = "computed_solution.json"
+
+    for opt in range(len(sys.argv)):
+        if sys.argv[opt] == "-ga" :
+            opt_ga = True
+        elif sys.argv[opt] == "-d" :
+            opt_d = True
+        elif sys.argv[opt] == "-ms" :
+            opt_ms = True
+        elif sys.argv[opt] == "-mi" :
+            opt_mi = True
+        elif sys.argv[opt] == "-kd" :
+            opt_kd = True
+        elif sys.argv[opt] == "-co" :
+            opt_co = True
+        elif sys.argv[opt] == "-re" :
+            opt_re = True
+        elif (sys.argv[opt] == "-na") and (opt < len(sys.argv)) and (sys.argv[opt+1][0] != '-') :
+            solution_name = sys.argv[opt+1]+".json"
+
+    if (not opt_kd) and (not opt_co) :
+        print("Si vous donnez des arguments, il faut préciser les algorithmes que vous voulez utiliser, -kd et/ou -co.")
+        sys.exit()
+
 
 problem_path = sys.argv[1]
 #mettre un solution_name
 
-solution_name = "sol_to_"+sys.argv[1].split("/")[2]
+
 
 
 with open(problem_path) as problem_file:
     problem = Problem(json.load(problem_file))
+    if not opt_ms :
+        problem.ball_max_speed = None
+        problem.robot_max_speed = None
 solution_path = "./configs/no_defenders.json"
 if problem.defenders is not None :
     solution_path = problem_path
@@ -628,12 +705,14 @@ graph = Graph(Board(problem, solution),solution_name)
 
 #graph.deleteUnnecessaryDefenders()
 
-graph.keepMostDefending()
+if opt_kd :
+    graph.keepMostDefending()
 
 #print(str(len(graph.defender_position_nodes)))
 #print("METHODE 2 COMMENCE ICI !!!")
 
-graph.closeToOpponent()
+if opt_co :
+    graph.closeToOpponent()
 
 #print(str(len(graph.defender_position_nodes_close_to_opponent)))
 
@@ -680,10 +759,6 @@ sys.exit()
 
 # *Tests : pour l'instant j'ai juste lancé les fichiers d'exemple et vérifié que ça fonctionnait pour eux, mais on devrait automatiser les tests
 
-
-
-
-# *Bugs à régler : à force de moodifier le code sans me souvenir exactement ce qui fait quoi, j'ai fini par casser l'utilité de areAllShotsDefended(), il faudrait que je le recode computeDefending(), penser que maintenant on fait les trucs dans l'autre sens et que j'ai supprimé le fait d'enlever petit à petit de shot.defenders (à remettre sûrement) et que j'ai décidé de pouvoir couper d'un coup toute la fin de la liste, donc à voir si en le recodant je peux lui donner un index auquel s'arrêter ; aussi faire attention à l'importance de areAllShotsDefended() dans isSolution() pour ne pas afficher de mauvais résultats
 
 
 
