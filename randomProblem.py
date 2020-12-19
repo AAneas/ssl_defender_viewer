@@ -41,7 +41,7 @@ def create_point_minmax():
 
 for i in range(len(sys.argv)):
     if sys.argv[i] == "-h" :
-        print("Crée un fichier de problème aléatoire.\nPar défaut les informations seront identiques à celles de configs/basic_problem_1.json\nAprès chaque argument, il est possible d'ajouter une valeur après afin de donner la valeur exacte à mettre dans le .json, s'il n'est pas précisé, il sera aléatoire.\n-ps : sans -ps, par défaut pos_step = 0.01, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-fl : sans -fl, par défaut field_limits = [[-4.5,4.5],[-3,3]], sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-g : sans -g, par défaut goals = [[[[4.5, -0.5], [4.5,0.5]], [-1,0]]], sinon un seul aléatoire si pas de valeur précisée, sinon cette valeur (peut avoir plusieurs goals)\n-mg : sans -mg, par défaut goals = [[[[4.5, -0.5], [4.5,0.5]], [-1,0]]], sinon un ou plusieurs aléatoires si pas de valeur précisée, sinon valeur buts aléatoires\n-o : sans -o, par défaut opponents = [[0.5, 0.0], [-2.0, -2.0], [2, 1.0]], sinon un seul aléatoire si pas de valeur précisée, sinon cette valeur (peut avoir plusieurs goals)\n-mo : sans -mo, par défaut opponents = [[0.5, 0.0], [-2.0, -2.0], [2, 1.0]], sinon un ou plusieurs aléatoires si pas de valeur précisée, sinon valeur buts aléatoires\n-rr : sans -rr, par défaut robot_radius = 0.09, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-ts : sans -ts, par défaut theta_step = 0.031416, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-ga : sans -ga, par défaut goalkeeper_area ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-d : sans -d, par défaut defenders ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-bs : sans -bs, par défaut ball_max_speed ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-rs : sans -rs, par défaut robot_max_speed ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-mi : sans -mi, par défaut min_dist ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-na : sans -na le fichier se nommera random.json, sinon valeur à mettre après")
+        print("Crée un fichier de problème aléatoire.\nPar défaut les informations seront identiques à celles de configs/basic_problem_1.json\nAprès chaque argument, il est possible d'ajouter une valeur après afin de donner la valeur exacte à mettre dans le .json, s'il n'est pas précisé, il sera aléatoire.\n-ps : sans -ps, par défaut pos_step = 0.01, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-fl : sans -fl, par défaut field_limits = [[-4.5,4.5],[-3,3]], sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-g : sans -g, par défaut goals = [[[[4.5, -0.5], [4.5,0.5]], [-1,0]]], sinon un seul aléatoire si pas de valeur précisée, sinon cette valeur (peut avoir plusieurs goals)\n-mg : sans -mg, par défaut goals = [[[[4.5, -0.5], [4.5,0.5]], [-1,0]]], sinon un ou plusieurs aléatoires si pas de valeur précisée, sinon valeur buts aléatoires\n-o : sans -o, par défaut opponents = [[0.5, 0.0], [-2.0, -2.0], [2, 1.0]], sinon un seul aléatoire si pas de valeur précisée, sinon cette valeur (peut avoir plusieurs goals)\n-mo : sans -mo, par défaut opponents = [[0.5, 0.0], [-2.0, -2.0], [2, 1.0]], sinon un ou plusieurs aléatoires si pas de valeur précisée, sinon valeur buts aléatoires\n-rr : sans -rr, par défaut robot_radius = 0.09, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-ts : sans -ts, par défaut theta_step = 0.031416, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-ga : sans -ga, par défaut goalkeeper_area ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-d : sans -d, par défaut defenders ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-bs : sans -bs, par défaut ball_max_speed ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-rs : sans -rs, par défaut robot_max_speed ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-mi : sans -mi, par défaut min_dist ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-na : sans -na le fichier se nommera random.json, sinon valeur à mettre après\nUn exemple de commande est :\n\tpython3 ./randomProblem.py -mo 6 -na problem_with_6_opponents")
         sys.exit()
     if sys.argv[i] == "-ps" :
         if (i < len(sys.argv)) and (sys.argv[i+1][0] != '-') :
@@ -70,7 +70,7 @@ for i in range(len(sys.argv)):
         else :
             nb_goals = randrange(10)
         goals = [create_goal()]
-        for j in range(nb_goals) :
+        for j in range(int(nb_goals)-1) :
             goals.append(create_goal())
     
     elif sys.argv[i] == "-o" :
@@ -86,7 +86,7 @@ for i in range(len(sys.argv)):
         else :
             nb = randrange(10)
         opponents = [create_point()]
-        for j in range(nb) :
+        for j in range(int(nb)-1) :
             opponents.append(create_point())
 
     elif sys.argv[i] == "-rr" :
