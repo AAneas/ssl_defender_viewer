@@ -3,6 +3,10 @@
 # finalement vérifier avec : python3 ./main.py ./configs/basic_problem_1.json ./configs/computed_solution.json
 
 """
+sh runAll.sh
+
+ou
+
 python3 ./buildGraph.py ./configs/basic_problem_1.json
 python3 ./main.py ./configs/basic_problem_1.json ./configs/sol_to_basic_problem_1.json
 
@@ -28,6 +32,7 @@ python3 ./main.py ./configs/max_speed_problem_1.json ./configs/sol_to_max_speed_
 
 import goal
 from geometry import segmentCircleIntersection
+import itertools
 #import board.py
 import math
 import sys
@@ -54,6 +59,7 @@ opt_mi = True
 
 opt_kd = True
 opt_co = True
+opt_bf = False
 opt_re = True
 
 def computeStart(lower_limit, ps):
@@ -154,6 +160,43 @@ def isBetween(start, end, pos) :
         return True
     return False
 
+def deleteUselessDefenders(node_list, index):
+    deleting = 0
+    for i in range(index-1-deleting):
+        defended_shots = node_list[i].defending_shots[:]
+        for j in range(index-deleting):
+            if i != j :
+                for s in node_list[j].defending_shots :
+                    if s in defended_shots :
+                        defended_shots.remove(s)
+                        if defended_shots == [] :
+                            #print("Deleting"+str(node_list[i].pos))
+                            deleting = deleting + 1
+                            node_list.pop(i)
+                            i = i - 1
+                            break
+            if defended_shots == [] :
+                break
+    return deleting
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -168,6 +211,7 @@ def isBetween(start, end, pos) :
 class Graph:
     def __init__(self, board, solution_name):#, tirs cadrés, ):
         self.board = board
+        self.checkArguments()
         self.dist = 0.0
         self.alreadyOneGoalKeeper = False
         self.computeDist()
@@ -179,6 +223,9 @@ class Graph:
         self.onTargetShots()
         self.defender_position_nodes = []
         self.everyGridPosition()
+        self.bf_worked = False
+        if opt_bf :
+            self.defender_position_nodes_bruteforce = self.defender_position_nodes.copy()
         self.computeDefending()
         self.sortByDefendingShots()
         self.defender_position_nodes_close_to_opponent = self.defender_position_nodes.copy()
@@ -188,6 +235,30 @@ class Graph:
         #self.deleteUnnecessaryDefenders()
         #print(self.isSolution()) #faire qqch de cette info
         #self.WriteSolution()
+
+    def checkArguments(self):
+        #print("CHECKING ARGUMENTS")
+        if self.board.problem.pos_step == 0 :
+            print("\"pos_step\" must be greater than 0. Resuming calculus with \"pos_step\" equal to 0.1, instead of 0")
+            self.board.problem.pos_step = 0.1
+        elif self.board.problem.pos_step < 0 :
+            print("\"pos_step\" must be greater than 0. Resuming calculus with \"pos_step\" equal to "+str(abs(self.board.problem.pos_step))+", instead of "+str(self.board.problem.pos_step))
+            self.board.problem.pos_step = abs(self.board.problem.pos_step)
+        if self.board.problem.theta_step == 0 :
+            print("\"theta_step\" must be greater than 0. Resuming calculus with \"theta_step\" equal to 0.031416, instead of 0")
+            self.board.problem.theta_step = 0.031416
+        elif self.board.problem.theta_step < 0 :
+            print("\"theta_step\" must be greater than 0. Resuming calculus with \"theta_step\" equal to "+str(abs(self.board.problem.theta_step))+", instead of "+str(self.board.problem.theta_step))
+            self.board.problem.theta_step = abs(self.board.problem.theta_step)
+        if self.board.problem.robot_radius == 0 :
+            print("If \"robot_radius\" is set as 0, no shot can be defended.")
+        elif self.board.problem.theta_step < 0 :
+            print("\"robot_radius\" must be greater than 0. Resuming calculus with \"robot_radius\" equal to "+str(abs(self.board.problem.robot_radius))+", instead of "+str(self.board.problem.robot_radius))
+            self.board.problem.robot_radius = abs(self.board.problem.robot_radius)
+        if (self.board.problem.min_dist is not None) and (self.board.problem.min_dist < 0) :
+            print("\"min_dist\" is not supposed to be lower than 0. You can erase the line containing \"min_dist\" if it is not necessary. Resuming calculus with \"robot_radius\" equal to "+str(abs(self.board.problem.min_dist))+", instead of "+str(self.board.problem.min_dist))
+            self.board.problem.min_dist = abs(self.board.problem.min_dist)
+       
 
     def isInsideSquare(self, square, pos) :
         if square is None :
@@ -274,9 +345,12 @@ class Graph:
             self.dist = self.board.problem.robot_radius * 2
             if self.board.problem.min_dist and opt_mi :
                 if self.board.problem.min_dist > self.dist :
-                    self.dist = self.board.problem.min_dist
+                    #print("aaaaaaaa")
+                    #self.dist = self.board.problem.min_dist + self.board.problem.robot_radius
+                    self.dist = self.board.problem.min_dist / 2 + self.board.problem.robot_radius
         elif self.board.problem.min_dist and opt_mi :
-            self.dist = self.board.problem.min_dist
+            self.dist = self.board.problem.min_dist + self.board.problem.robot_radius
+            # self.dist = self.board.problem.min_dist / 2 + self.board.problem.robot_radius
 
     def everyGridPosition(self): # faire fonction plus économique dans laquelle on ne vérifie que les points de la grille dans le range du tir
         self.defender_position_nodes.clear()
@@ -315,11 +389,11 @@ class Graph:
     """def verifySort(self):
         #print("Verify sort :")
         for defender in self.defender_position_nodes :
-            if len(defender.defending_shots) == 0 :
-                sys.exit()
+            #if len(defender.defending_shots) == 0 :
+            #    sys.exit()
             print(str(defender.pos))
-            print(len(defender.defending_shots))
-            print(str(self.closestOpponentDistance(defender)))
+            #print(len(defender.defending_shots))
+            #print(str(self.closestOpponentDistance(defender)))
             #if len(defender.defending_shots) == 11 :
             #    print(defender.pos)
         #for i in self.defender_position_nodes :
@@ -379,13 +453,13 @@ class Graph:
             for shot in self.defender_position_nodes[index].defending_shots :
                 if shot in shots :
                     shots.remove(shot)
-            index = index + 1
+            #index = index + 1
         return shots
-    
+
     def keepMostDefending(self) :
         defender_nb = 0
         while defender_nb < len(self.defender_position_nodes) :
-            if cutList(self.defender_position_nodes, defender_nb, self.notDefended(defender_nb, True) is None) :
+            if cutList(self.defender_position_nodes, defender_nb, self.notDefended(defender_nb, True) == []) :
                 break
             defender = self.defender_position_nodes[defender_nb]
             if (self.notDefended(defender_nb, False) is None) or (any(self.notDefended(defender_nb, False)) == False) or (self.isTooCloseToAnOpponent(defender.pos[0], defender.pos[1])) or (self.isTooCloseToADefender(defender_nb, self.defender_position_nodes)) or (not self.canBePlaced(defender.pos)) :
@@ -394,7 +468,9 @@ class Graph:
                 self.defender_position_nodes.remove(defender)
             else :
                 self.newGoalKeeper(defender.pos)
-                defender_nb = defender_nb + 1    
+                defender_nb = defender_nb + 1
+                #print(defender.pos)
+                defender_nb = defender_nb - deleteUselessDefenders(self.defender_position_nodes, defender_nb)
     
     """def deleteUnnecessaryDefenders(self):
         #self.verifyShots()
@@ -469,9 +545,56 @@ class Graph:
                 else :
                     self.newGoalKeeper(defender.pos)
                     index = index + 1
+                    index = index - deleteUselessDefenders(self.defender_position_nodes, index)
             else :
                 #del defender
                 self.defender_position_nodes_close_to_opponent.pop(index)
+
+
+
+
+
+    def bruteForce(self):
+        self.defender_position_nodes_bruteforce
+        start = 1
+        end = len(self.defender_position_nodes_bruteforce)
+        if opt_d :
+            start = self.nb_def
+            end = start
+            total_dist = None
+        for nb in range(start, end+1) :
+            all_permutations = itertools.permutations(self.defender_position_nodes_bruteforce, nb)
+            for permutation in all_permutations :
+                for defender in permutation :
+                    if not self.canBePlaced(defender.pos) :
+                        break
+                    self.newGoalKeeper(defender.pos)
+                if self.notDefended(len(permutation), True) == [] :
+                    if opt_d :
+                        this_dist = totalDistance(self.starting_pos, permutation)
+                        if total_dist == None :
+                            total_dist = this_dist
+                            self.defender_position_nodes_bruteforce = permutation[:]
+                        else :
+                            if this_dist < total_dist :
+                                total_dist = this_dist
+                                self.defender_position_nodes_bruteforce = permutation[:]
+                    else :
+                        self.defender_position_nodes_bruteforce = permutation[:]
+                        return True
+        if opt_d and (total_dist != None) :
+            return True
+        return False
+        
+
+
+
+
+
+
+
+
+
 
     def resetShotsDefenders(self):
         for s in self.shot_on_target_nodes :
@@ -481,15 +604,17 @@ class Graph:
         #print(self.areAllShotsDefended())
         #print(self.opponents_and_shots)
         #print("retrying?")
-        if (not self.solutionOneWorked()) and (not self.solutionTwoWorked()) and opt_re :
-            #print("yes")
-            #print()
+        if opt_re and (not self.solutionOneWorked()) and (not self.solutionTwoWorked()) and (not self.bf_worked) :
+            print("Retrying without extensions")
+            #print(len(self.defender_position_nodes_close_to_opponent))
+            #print(len(self.defender_position_nodes))
             opt_ga = False
             opt_d = False
             opt_ms = False
             opt_mi = False
             #opt_re = False
             self.dist = 0.0
+            self.computeDist()
             self.starting_pos = []
             self.resetShotsDefenders()
             self.everyGridPosition()
@@ -497,28 +622,32 @@ class Graph:
             self.sortByDefendingShots()
             self.defender_position_nodes_close_to_opponent = self.defender_position_nodes.copy()
             if opt_kd :
-                graph.keepMostDefending()
+                self.keepMostDefending()
             if opt_co :
-                graph.closeToOpponent()
+                self.closeToOpponent()
+            if opt_bf :
+                self.bruteForce()
             #print(str(len(self.defender_position_nodes)))
             #print(str(len(self.defender_position_nodes_close_to_opponent)))
         
     def orderingTwoMethods(self):
         #print("Two")
         #listFillWithDefenders(self.defender_position_nodes, len(self.starting_pos), self.starting_pos)
-        listFillWithMinusOnes(self.defender_position_nodes, len(self.starting_pos))
-        total_distance = totalDistance(self.starting_pos, self.defender_position_nodes)
-        total_distance = orderedByDistance(self.defender_position_nodes, self.starting_pos, total_distance, self.defender_position_nodes[:])
-        #listFillWithDefenders(self.defender_position_nodes_close_to_opponent, len(self.starting_pos), self.starting_pos)
-        #print("ORDERING METHOD 2")
-        orderedByDistance(self.defender_position_nodes, self.starting_pos, total_distance, self.defender_position_nodes_close_to_opponent)
+        if opt_d :
+            listFillWithMinusOnes(self.defender_position_nodes, len(self.starting_pos))
+            total_distance = totalDistance(self.starting_pos, self.defender_position_nodes)
+            total_distance = orderedByDistance(self.defender_position_nodes, self.starting_pos, total_distance, self.defender_position_nodes[:])
+            #listFillWithDefenders(self.defender_position_nodes_close_to_opponent, len(self.starting_pos), self.starting_pos)
+            #print("ORDERING METHOD 2")
+            orderedByDistance(self.defender_position_nodes, self.starting_pos, total_distance, self.defender_position_nodes_close_to_opponent)
 
     def orderingOneMethod(self):
         #print("One")
         #listFillWithDefenders(self.defender_position_nodes, len(self.starting_pos), self.starting_pos)
-        listFillWithMinusOnes(self.defender_position_nodes, len(self.starting_pos))
-        total_distance = totalDistance(self.starting_pos, self.defender_position_nodes)
-        orderedByDistance(self.defender_position_nodes, self.starting_pos, total_distance, self.defender_position_nodes[:])
+        if opt_d :
+            listFillWithMinusOnes(self.defender_position_nodes, len(self.starting_pos))
+            total_distance = totalDistance(self.starting_pos, self.defender_position_nodes)
+            orderedByDistance(self.defender_position_nodes, self.starting_pos, total_distance, self.defender_position_nodes[:])
     
     def chooseAnswer(self):
         #print("choosing")
@@ -535,6 +664,9 @@ class Graph:
             #self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
             #if self.starting_pos != [] :
             #    self.orderingOneMethod()
+        if self.bf_worked :
+            self.defender_position_nodes = self.defender_position_nodes_bruteforce
+            return
         if((self.solutionOneWorked() and self.solutionTwoWorked()) or ((not self.solutionOneWorked()) and (not self.solutionTwoWorked()))) : # si on a trouvé une solution avec les deux méthodes, ou qu'on n'a trouvé aucune solution avec les deux méthodes, alors on prend la solution qui demande le moins de défenseurs si pas de start pos sinon celle qui demande le moins de déplacement
             if self.starting_pos == [] :
                 if (len(self.defender_position_nodes_close_to_opponent) < len(self.defender_position_nodes)) and (len(self.defender_position_nodes_close_to_opponent) > 0) :
@@ -568,22 +700,25 @@ class Graph:
         
     def solutionOneWorked(self):
         if (len(self.defender_position_nodes) <= 0) :
+            #print("len(self.defender_position_nodes) <= 0")
             return False
-        if (self.starting_pos != []) and (len(self.defender_position_nodes) > len(self.starting_pos)) :
+        if (opt_d) and (self.starting_pos != []) and (len(self.defender_position_nodes) > len(self.starting_pos)) :
+            #print("(self.starting_pos != []) and (len(self.defender_position_nodes) > len(self.starting_pos))")
             return False
-        return (self.notDefended(len(self.defender_position_nodes), True) is not None)
+        #return (self.notDefended(len(self.defender_position_nodes), True) is not None)
+        return (self.notDefended(len(self.defender_position_nodes), True) == [])
 
     def solutionTwoWorked(self):
         if (len(self.defender_position_nodes_close_to_opponent) <= 0) :
             return False
-        if (self.starting_pos != []) and (len(self.defender_position_nodes_close_to_opponent) > len(self.starting_pos)) :
+        if (opt_d) and (self.starting_pos != []) and (len(self.defender_position_nodes_close_to_opponent) > len(self.starting_pos)) :
             return False
         return (not self.opponents_and_shots)
 
     def isSolution(self):
         if len(self.defender_position_nodes) == 0 :
             print("No defender found")
-        if not self.solutionOneWorked() : # attention, maintenant il y a deuxième solution, je crois que cette fonction n'a été faite que pour la première méthode
+        if not self.solutionOneWorked() :
             return False 
         #if len(self.defender_position_nodes) > self.board.problem.getNbOpponents():
         #print(str(len(self.defender_position_nodes))+" > "+str(self.nb_def))
@@ -593,7 +728,8 @@ class Graph:
         return True
 
     def writeSolution(self):
-        f = open("./configs/"+self.sol_name, "w") # à voir si on met un nom modifiable par l'utilisateur
+        #print("./configs/"+self.sol_name)
+        f = open("./configs/"+self.sol_name, "w")
         f.write("{\n\t\"defenders\" : [\n\t\t")
         comma = False
         for defender in self.defender_position_nodes :
@@ -641,15 +777,17 @@ class OpponentShot:
 #if (len(sys.argv) != 2):
 #    sys.exit("Usage: " + sys.argv[0] + " <problem.json>")
 
+how_to = "Par défaut, le programme lance avec toutes les extensions possibles l'algo \"KeepMostDefending\" puis \"CloseToOpponent\" et compare le résultat des deux pour sélectionner la solution la plus optimale (demandant le moins de distance si extention défenseurs initiaux, ou demandant le moins de défenseurs sinon), si aucune solution n'est trouvée en prenant en compte les extensions, le programme est lancé à nouveau sans les extensions.\nSi vous voulez choisir uniquement certaines options vous pouvez les préciser.\n-kd : lance l'algo \"KeepMostDefending\"\n-co : lance l'algo \"CloseToOpponent\"\n-bf : lance l'algo \"Bruteforce\"\n-re : Recommence sans les extensions dans le cas où aucune solution n'est trouvée avec\n-ga : prend on compte l'extension \"GoalkeeperArea\"\n-d : prend on compte l'extension \"InitialDefenders\"\n-ms : prend on compte l'extension \"MaximalSpeed\"\n-mi : prend on compte l'extension \"MinDist\"\nIl n'y a pas d'option pour activer l'option \"MultiGoal\" car elle sera toujours active.\n-na : sans -na le nom de la solution sera sol_to_<problem>.json, avec il prendra la nom écrit juste après.\n\nPar exemple si vous voulez donner un nom au fichier de solution et garder le fait d'utiliser les deux algorithmes sur toutes les extensions et recommencer si besoin, vous pouvez écrire\n\tpython3 ./buildGraph.py ./configs/every_extension_problem.json -na ma_solution -kd -co -re -ga -d -ms -mi"
+
 if len(sys.argv) < 2 :
     print("Pensez à ajouter un fichier de problème .json en entrée")
     sys.exit()
 
-solution_name = "sol_to_"+sys.argv[1].split("/")[2]
+solution_name = "sol_to_"+sys.argv[1].split("/")[-1]
 
 if (len(sys.argv) != 2):
     if sys.argv[2] == "-h" :
-        print("Par défaut, le programme lance avec toutes les extensions possibles l'algo \"KeepMostDefending\" puis \"CloseToOpponent\" et compare le résultat des deux pour sélectionner la solution la plus optimale (demandant le moins de distance si extention défenseurs initiaux, ou demandant le moins de défenseurs sinon), si aucune solution n'est trouvée en prenant en compte les extensions, le programme est lancé à nouveau sans les extensions. Si vous voulez choisir uniquement certaines options vous pouvez les préciser.\n-kd : lance l'algo \"KeepMostDefending\"\n-co : lance l'algo \"CloseToOpponent\"\n-ga : prend on compte l'extension \"GoalkeeperArea\"\n-re : Recommence sans les extensions dans le cas où aucune solution n'est trouvée avec\n-d : prend on compte l'extension \"InitialDefenders\"\n-ms : prend on compte l'extension \"MaximalSpeed\"\n-mi : prend on compte l'extension \"MinDist\"\nIl n'y a pas d'option pour activer l'option \"MultiGoal\" car elle sera toujours active.\n-na : sans -na le nom de la solution sera sol_to_<problem>.json, avec il prendra la nom écrit juste après.\n\nPar exemple si vous voulez donner un nom au fichier de solution et garder le fait d'utiliser les deux algorithmes sur toutes les extensions et recommencer si besoin, vous pouvez écrire\n\tpython3 ./buildGraph.py ./configs/every_extension_problem.json -na ma_solution -kd -co -re -ga -d -ms -mi")
+        print(how_to)
         sys.exit()
     opt_ga = False
     opt_d = False
@@ -659,7 +797,7 @@ if (len(sys.argv) != 2):
     opt_co = False
     opt_re = False
 
-    solution_name = "computed_solution.json"
+    #solution_name = "computed_solution.json"
 
     for opt in range(len(sys.argv)):
         if sys.argv[opt] == "-ga" :
@@ -674,24 +812,40 @@ if (len(sys.argv) != 2):
             opt_kd = True
         elif sys.argv[opt] == "-co" :
             opt_co = True
+        elif sys.argv[opt] == "-bf" :
+            opt_bf = True
         elif sys.argv[opt] == "-re" :
             opt_re = True
         elif (sys.argv[opt] == "-na") and (opt < len(sys.argv)) and (sys.argv[opt+1][0] != '-') :
             solution_name = sys.argv[opt+1]+".json"
 
-    if (not opt_kd) and (not opt_co) :
-        print("Si vous donnez des arguments, il faut préciser les algorithmes que vous voulez utiliser, -kd et/ou -co.")
+    if (not opt_kd) and (not opt_co) and (not opt_bf) :
+        raise ValueError("Si vous donnez des arguments, il faut préciser les algorithmes que vous voulez utiliser, -kd, -co et/ou -bf")
         sys.exit()
 
 
 problem_path = sys.argv[1]
 #mettre un solution_name
 
-
+def checkData(data):
+    if data["opponents"] == [] :
+        raise ValueError("No \"opponents\" found.")
+        sys.exit()
+    if data["theta_step"] <= 0 :
+        raise ValueError("\"theta_step\" must be greater than 0. Try with a different value, 0.031416 for example.")
+        sys.exit()
+    if data.get("ball_max_speed") is not None and data.get("ball_max_speed") <= 0 :
+        raise ValueError("\"ball_max_speed\" must be greater than 0. Try with a different value, 8.0 for example; or remove the line containing \"ball_max_speed\".")
+        sys.exit()
+    if data.get("robot_max_speed") is not None and data.get("robot_max_speed") <= 0 :
+        raise ValueError("\"robot_max_speed\" must be greater than 0. Try with a different value, 8.0 for example; or remove the line containing \"robot_max_speed\".")
+        sys.exit()
 
 
 with open(problem_path) as problem_file:
-    problem = Problem(json.load(problem_file))
+    data = json.load(problem_file)
+    checkData(data)
+    problem = Problem(data)
     if not opt_ms :
         problem.ball_max_speed = None
         problem.robot_max_speed = None
@@ -716,11 +870,16 @@ if opt_co :
 
 #print(str(len(graph.defender_position_nodes_close_to_opponent)))
 
+if opt_bf :
+    graph.bf_worked = graph.bruteForce()
+
 graph.chooseAnswer()
 
 changeMinusOnesToDefenders(graph.starting_pos, graph.defender_position_nodes)
 
-print(graph.isSolution()) #faire qqch de cette info
+print(">"+str(graph.isSolution())) #faire qqch de cette info
+
+#graph.verifySort()
 
 graph.writeSolution()
 
