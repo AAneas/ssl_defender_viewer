@@ -554,6 +554,8 @@ class Graph:
 
 
 
+
+
     def bruteForce(self):
         self.defender_position_nodes_bruteforce
         start = 1
@@ -563,7 +565,10 @@ class Graph:
             end = start
             total_dist = None
         for nb in range(start, end+1) :
-            all_permutations = itertools.permutations(self.defender_position_nodes_bruteforce, nb)
+            if opt_d :
+                all_permutations = itertools.combinations(self.defender_position_nodes_bruteforce, nb)
+            else :
+                all_permutations = itertools.permutations(self.defender_position_nodes_bruteforce, nb)
             for permutation in all_permutations :
                 for defender in permutation :
                     if not self.canBePlaced(defender.pos) :
