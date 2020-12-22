@@ -18,6 +18,8 @@ name = None
 def create_goal():
     dirs = [-1,0,1]
     dir1 = dirs[randrange(len(dirs))]
+    if dir1 == 0 :
+        dirs = [-1,1]
     dir2 = dirs[randrange(len(dirs))]
     g00 = randrange(20*field_limits[0][0], 20*field_limits[0][1]+1, 20*pos_step)/20
     if dir2 == 0 :
@@ -35,19 +37,19 @@ def create_point():
     return [randrange(20*field_limits[0][0], 20*field_limits[0][1]+1, 20*pos_step)/20, randrange(20*field_limits[1][0], 20*field_limits[1][1]+1, 20*pos_step)/20]
 
 def create_point_minmax():
-    p1 = randrange(20*field_limits[0][0], 20*field_limits[0][1]+1, 20*pos_step)/20
-    p2 = randrange(20*field_limits[1][0], 20*field_limits[1][1]+1, 20*pos_step)/20
+    p1 = randrange(20*field_limits[0][0], 20*field_limits[1][0]+1, 20*pos_step)/20
+    p2 = randrange(20*field_limits[0][1], 20*field_limits[1][1]+1, 20*pos_step)/20
     return [min(p1,p2), max(p1,p2)]
 
 for i in range(len(sys.argv)):
     if sys.argv[i] == "-h" :
-        print("Crée un fichier de problème aléatoire.\nPar défaut les informations seront identiques à celles de configs/basic_problem_1.json\nAprès chaque argument, il est possible d'ajouter une valeur après afin de donner la valeur exacte à mettre dans le .json, s'il n'est pas précisé, il sera aléatoire.\n-ps : sans -ps, par défaut pos_step = 0.01, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-fl : sans -fl, par défaut field_limits = [[-4.5,4.5],[-3,3]], sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-g : sans -g, par défaut goals = [[[[4.5, -0.5], [4.5,0.5]], [-1,0]]], sinon un seul aléatoire si pas de valeur précisée, sinon cette valeur (peut avoir plusieurs goals)\n-mg : sans -mg, par défaut goals = [[[[4.5, -0.5], [4.5,0.5]], [-1,0]]], sinon un ou plusieurs aléatoires si pas de valeur précisée, sinon valeur buts aléatoires\n-o : sans -o, par défaut opponents = [[0.5, 0.0], [-2.0, -2.0], [2, 1.0]], sinon un seul aléatoire si pas de valeur précisée, sinon cette valeur (peut avoir plusieurs goals)\n-mo : sans -mo, par défaut opponents = [[0.5, 0.0], [-2.0, -2.0], [2, 1.0]], sinon un ou plusieurs aléatoires si pas de valeur précisée, sinon valeur buts aléatoires\n-rr : sans -rr, par défaut robot_radius = 0.09, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-ts : sans -ts, par défaut theta_step = 0.031416, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-ga : sans -ga, par défaut goalkeeper_area ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-d : sans -d, par défaut defenders ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-bs : sans -bs, par défaut ball_max_speed ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-rs : sans -rs, par défaut robot_max_speed ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-mi : sans -mi, par défaut min_dist ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-na : sans -na le fichier se nommera random.json, sinon valeur à mettre après\nUn exemple de commande est :\n\tpython3 ./randomProblem.py -mo 6 -na problem_with_6_opponents")
+        print("Crée un fichier de problème aléatoire.\nPar défaut les informations seront identiques à celles de configs/basic_problem_1.json\nAjouter un argument permet de modifier une valeur, après chaque argument il est possible d'ajouter une valeur après afin de donner la valeur exacte à mettre dans le .json, si elle n'est pas précisée, elle sera aléatoire.\n-ps : sans -ps, par défaut pos_step = 0.01, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-fl : sans -fl, par défaut field_limits = [[-4.5,4.5],[-3,3]], sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-g : sans -g, par défaut goals = [[[[4.5, -0.5], [4.5,0.5]], [-1,0]]], sinon un seul aléatoire si pas de valeur précisée, sinon cette valeur (peut avoir plusieurs goals)\n-mg : sans -mg, par défaut goals = [[[[4.5, -0.5], [4.5,0.5]], [-1,0]]], sinon un ou plusieurs aléatoires si pas de valeur précisée, sinon valeur donnée\n-o : sans -o, par défaut opponents = [[0.5, 0.0], [-2.0, -2.0], [2, 1.0]], sinon un seul aléatoire si pas de valeur précisée, sinon cette valeur (peut avoir plusieurs goals)\n-mo : sans -mo, par défaut opponents = [[0.5, 0.0], [-2.0, -2.0], [2, 1.0]], sinon un ou plusieurs aléatoires si pas de valeur précisée, sinon valeur donnée\n-rr : sans -rr, par défaut robot_radius = 0.09, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-ts : sans -ts, par défaut theta_step = 0.031416, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-ga : sans -ga, par défaut goalkeeper_area ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-d : sans -d, par défaut defenders ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-bs : sans -bs, par défaut ball_max_speed ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-rs : sans -rs, par défaut robot_max_speed ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-mi : sans -mi, par défaut min_dist ne sera pas présent, sinon aléatoire si pas de valeur précisée, sinon cette valeur\n-na : sans -na le fichier se nommera random.json, sinon valeur à mettre après\nUn exemple de commande est :\n\tpython3 ./randomProblem.py -mo 6 -na problem_with_6_opponents")
         sys.exit()
     if sys.argv[i] == "-ps" :
         if (i < len(sys.argv)-1) :
             if (sys.argv[i+1][0] != '-') :
                 i = i+1
-                pos_step = sys.argv[i]
+                pos_step = float(sys.argv[i])
             else :
                 pos_step = randrange(0, 20)/20
         else :
@@ -67,7 +69,7 @@ for i in range(len(sys.argv)):
         if (i < len(sys.argv)-1) :
             if (sys.argv[i+1][0] != '-') :
                 i = i+1
-                goals = literal_eval(sys.argv[i])
+                goals = [literal_eval(sys.argv[i])]
             else :
                 goals = [create_goal()]
         else :
@@ -150,13 +152,13 @@ for i in range(len(sys.argv)):
         if (i < len(sys.argv)-1) :
             if (sys.argv[i+1][0] != '-') :
                 i = i+1
-                nb = sys.argv[i]
+                nb = int(sys.argv[i])
             else :
                 nb = randrange(10)
         else :
             nb = randrange(10)
         defenders = [create_point()]
-        for j in range(nb) :
+        for j in range(int(nb)-1) :
             defenders.append(create_point())
 
     elif sys.argv[i] == "-bs" :
@@ -179,7 +181,7 @@ for i in range(len(sys.argv)):
         else :
             robot_max_speed = randrange(5)+1
 
-    elif sys.argv[i] == "-di" :
+    elif sys.argv[i] == "-mi" :
         if (i < len(sys.argv)-1) :
             if (sys.argv[i+1][0] != '-') :
                 i = i+1
@@ -197,19 +199,14 @@ for i in range(len(sys.argv)):
 
 for i in goals :
     for j in i[0] :
+        field_limits[0][0]
         if j[0] < field_limits[0][0] or j[0] > field_limits[0][1] or j[1] < field_limits[1][0] or j[1] > field_limits[1][1] :
-            #print(j)
             j = create_point()
-            #print(j)
-            #print("\n")
 
 def changePoint(points) :
     for i in points :
         if i[0] < field_limits[0][0] or i[0] > field_limits[0][1] or i[1] < field_limits[1][0] or i[1] > field_limits[1][1] :
-            #print(i)
             i = create_point()
-            #print(i)
-            #print("\n")
 
 if opponents != None :
     changePoint(opponents)
@@ -217,16 +214,14 @@ if defenders != None :
     changePoint(defenders)
 if goalkeeper_area != None :
     if (goalkeeper_area[0][0] < field_limits[0][0]) or (goalkeeper_area[0][1] > field_limits[0][1]) or (goalkeeper_area[1][0] < field_limits[1][0]) or (goalkeeper_area[1][1] > field_limits[1][1]) :
-        #print(str(goalkeeper_area))
         goalkeeper_area = [create_point_minmax(), create_point_minmax()]
-        #print(str(goalkeeper_area))
 
 if name == None :
     name = "./configs/random.json"
 else :
     name = "./configs/"+name+".json"
 
-f = open(name, "w") # à voir si on met un nom modifiable par l'utilisateur
+f = open(name, "w")
 f.write("{\n\t\"field_limits\" : "+str(field_limits)+",\n\t\"goals\" : [\n\t\t")
 comma = False
 for goal in goals :

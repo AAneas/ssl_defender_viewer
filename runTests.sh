@@ -38,11 +38,11 @@ do
 done
 
 echo "-Modifions field_limits :" >> solTime.txt
-for x in $(seq 1 20)
+for x in $(seq 3 12)
 do
     xp=$(printf '%.1f' $(echo "scale=1; $x/2" | bc -l))
     xn=$(printf '%.1f' $(echo "scale=1; $x/-2" | bc -l))
-    for y in $(seq 1 20)
+    for y in $(seq 3 12)
     do
         #echo "$ps" >> solTime.txt
         yp=$(printf '%.1f' $(echo "scale=1; $y/2" | bc -l))
@@ -88,7 +88,7 @@ do
     gn=$(printf '%.2f' $(echo "scale=2; $g/(-2)" | bc -l))
     tg="[[[4.5,$gn],[4.5,$gp]],[-1,0]]"
     #echo "$tps" >> solTime.txt
-    python3 ./randomProblem.py -mg $tg
+    python3 ./randomProblem.py -g $tg
     T=0
     T2=0
     T3=0
@@ -130,7 +130,7 @@ do
     results2=0
     T3=0
     results3=0
-    for nb in $(seq 1 10)
+    for nb in $(seq 1 1)
     do
         python3 ./randomProblem.py -mg $mg
         #python3 randomProblem.py -ps
@@ -143,30 +143,30 @@ do
         E1=$(date +%s%N)
         T=$((($E1 - $S1)/1000000+$T))
 
-        S1=$(date +%s%N)
-        result="$(echo `python3 ./buildGraph.py ./configs/random.json -co` | cut -d'>' -f2)"
-        if [ $result = "True" ]
-        then
-            results2=$((results2+1))
-        fi
-        E1=$(date +%s%N)
-        T2=$((($E1 - $S1)/1000000+$T2))
+        # S1=$(date +%s%N)
+        # result="$(echo `python3 ./buildGraph.py ./configs/random.json -co` | cut -d'>' -f2)"
+        # if [ $result = "True" ]
+        # then
+        #     results2=$((results2+1))
+        # fi
+        # E1=$(date +%s%N)
+        # T2=$((($E1 - $S1)/1000000+$T2))
 
-        S1=$(date +%s%N)
-        result="$(echo `python3 ./buildGraph.py ./configs/random.json` | cut -d'>' -f2)"
-        if [ $result = "True" ]
-        then
-            results3=$((results3+1))
-        fi
-        E1=$(date +%s%N)
-        T3=$((($E1 - $S1)/1000000+$T3))
+        # S1=$(date +%s%N)
+        # result="$(echo `python3 ./buildGraph.py ./configs/random.json` | cut -d'>' -f2)"
+        # if [ $result = "True" ]
+        # then
+        #     results3=$((results3+1))
+        # fi
+        # E1=$(date +%s%N)
+        # T3=$((($E1 - $S1)/1000000+$T3))
     done
-    T=$(($T/10))
+    #T=$(($T/10))
     echo "(basic_problem_1 with $mg goals took $T miliseconds with -kd, succeeded $results times)" >> solTime.txt
-    T2=$(($T2/10))
-    echo "(basic_problem_1 with $mg goals took $T2 miliseconds with -co, succeeded $results2 times)" >> solTime.txt
-    T3=$(($T3/10))
-    echo "(basic_problem_1 with $mg goals took $T3 miliseconds, succeeded $results3 times)" >> solTime.txt
+    #T2=$(($T2/10))
+    #echo "(basic_problem_1 with $mg goals took $T2 miliseconds with -co, succeeded $results2 times)" >> solTime.txt
+    #T3=$(($T3/10))
+    #echo "(basic_problem_1 with $mg goals took $T3 miliseconds, succeeded $results3 times)" >> solTime.txt
 done
 
 echo "-Modifions opponents :" >> solTime.txt
@@ -181,7 +181,7 @@ do
     results2=0
     T3=0
     results3=0
-    for nb in $(seq 1 10)
+    for nb in $(seq 1 1)
     do
         python3 ./randomProblem.py -mo $mo
         #python3 randomProblem.py -ps
@@ -212,12 +212,12 @@ do
         E1=$(date +%s%N)
         T3=$((($E1 - $S1)/1000000+$T3))
     done
-    T=$(($T/10))
-    echo "(basic_problem_1 with $mg opponents took $T miliseconds with -kd, succeeded $results times)" >> solTime.txt
-    T2=$(($T2/10))
-    echo "(basic_problem_1 with $mg opponents took $T2 miliseconds with -co, succeeded $results2 times)" >> solTime.txt
-    T3=$(($T3/10))
-    echo "(basic_problem_1 with $mg opponents took $T3 miliseconds, succeeded $results3 times)" >> solTime.txt
+    #T=$(($T/10))
+    echo "(basic_problem_1 with $mo opponents took $T miliseconds with -kd, succeeded $results times)" >> solTime.txt
+    #T2=$(($T2/10))
+    echo "(basic_problem_1 with $mo opponents took $T2 miliseconds with -co, succeeded $results2 times)" >> solTime.txt
+    #T3=$(($T3/10))
+    echo "(basic_problem_1 with $mo opponents took $T3 miliseconds, succeeded $results3 times)" >> solTime.txt
 done
 
 echo "-Modifions robot_radius :" >> solTime.txt
@@ -230,7 +230,7 @@ do
     T=0
     T2=0
     T3=0
-    for nb in $(seq 1 10)
+    for nb in $(seq 1 1)
     do
         #python3 randomProblem.py -ps
         S1=$(date +%s%N)
@@ -248,11 +248,11 @@ do
         E1=$(date +%s%N)
         T3=$((($E1 - $S1)/1000000+$T3))
     done
-    T=$(($T/10))
+    #T=$(($T/10))
     echo "(basic_problem_1 with rr=$trr took $T miliseconds with -kd, succeeded = $result)" >> solTime.txt
-    T2=$(($T2/10))
+    #T2=$(($T2/10))
     echo "(basic_problem_1 with rr=$trr took $T2 miliseconds with -co, succeeded = $result2)" >> solTime.txt
-    T3=$(($T3/10))
+    #T3=$(($T3/10))
     echo "(basic_problem_1 with rr=$trr took $T3 miliseconds, succeeded = $result3)" >> solTime.txt
 done
 
@@ -266,7 +266,7 @@ do
     T=0
     T2=0
     T3=0
-    for nb in $(seq 1 10)
+    for nb in $(seq 1 1)
     do
         #python3 randomProblem.py -ps
         S1=$(date +%s%N)
@@ -284,11 +284,11 @@ do
         E1=$(date +%s%N)
         T3=$((($E1 - $S1)/1000000+$T3))
     done
-    T=$(($T/10))
+    #T=$(($T/10))
     echo "(basic_problem_1 with ts=$tts took $T miliseconds with -kd, succeeded = $result)" >> solTime.txt
-    T2=$(($T2/10))
+    #T2=$(($T2/10))
     echo "(basic_problem_1 with ts=$tts took $T2 miliseconds with -co, succeeded = $result2)" >> solTime.txt
-    T3=$(($T3/10))
+    #T3=$(($T3/10))
     echo "(basic_problem_1 with ts=$tts took $T3 miliseconds, succeeded = $result3)" >> solTime.txt
 done
 
@@ -308,16 +308,16 @@ do
         T=0
         T2=0
         T3=0
-        for nb in $(seq 1 10)
+        for nb in $(seq 1 1)
         do
             #python3 randomProblem.py -ps
             S1=$(date +%s%N)
-            result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd` | cut -d'>' -f2)"
+            result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd -ga` | cut -d'>' -f2)"
             E1=$(date +%s%N)
             T=$((($E1 - $S1)/1000000+$T))
 
             S1=$(date +%s%N)
-            result2="$(echo `python3 ./buildGraph.py ./configs/random.json -co` | cut -d'>' -f2)"
+            result2="$(echo `python3 ./buildGraph.py ./configs/random.json -co -ga` | cut -d'>' -f2)"
             E1=$(date +%s%N)
             T2=$((($E1 - $S1)/1000000+$T2))
 
@@ -326,11 +326,11 @@ do
             E1=$(date +%s%N)
             T3=$((($E1 - $S1)/1000000+$T3))
         done
-        T=$(($T/10))
+        #T=$(($T/10))
         echo "(basic_problem_1 with ga=$ga took $T miliseconds with -kd, succeeded = $result)" >> solTime.txt
-        T2=$(($T2/10))
+        #T2=$(($T2/10))
         echo "(basic_problem_1 with ga=$ga took $T2 miliseconds with -co, succeeded = $result2)" >> solTime.txt
-        T3=$(($T3/10))
+        #T3=$(($T3/10))
         echo "(basic_problem_1 with ga=$ga took $T3 miliseconds, succeeded = $result3)" >> solTime.txt
     done
 done
@@ -347,12 +347,12 @@ do
     results2=0
     T3=0
     results3=0
-    for nb in $(seq 1 10)
+    for nb in $(seq 1 1)
     do
         python3 ./randomProblem.py -md $md
         #python3 randomProblem.py -ps
         S1=$(date +%s%N)
-        result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd` | cut -d'>' -f2)"
+        result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd -d` | cut -d'>' -f2)"
         if [ $result = "True" ]
         then
             results=$((results+1))
@@ -361,7 +361,7 @@ do
         T=$((($E1 - $S1)/1000000+$T))
 
         S1=$(date +%s%N)
-        result2="$(echo `python3 ./buildGraph.py ./configs/random.json -co` | cut -d'>' -f2)"
+        result2="$(echo `python3 ./buildGraph.py ./configs/random.json -co -d` | cut -d'>' -f2)"
         if [ $result = "True" ]
         then
             results2=$((results2+1))
@@ -378,11 +378,11 @@ do
         E1=$(date +%s%N)
         T3=$((($E1 - $S1)/1000000+$T3))
     done
-    T=$(($T/10))
+    #T=$(($T/10))
     echo "(basic_problem_1 with $md defenders took $T miliseconds with -kd, succeeded $results times)" >> solTime.txt
-    T2=$(($T2/10))
+    #T2=$(($T2/10))
     echo "(basic_problem_1 with $md defenders took $T2 miliseconds with -co, succeeded $results2 times)" >> solTime.txt
-    T3=$(($T3/10))
+    #T3=$(($T3/10))
     echo "(basic_problem_1 with $md defenders took $T3 miliseconds, succeeded $results3 times)" >> solTime.txt
 done
 
@@ -391,7 +391,7 @@ for bs in $(seq 3 10)
 do
     #xp=$(printf '%.1f' $(echo "scale=1; 9/2" | bc -l))
     #xn=$(printf '%.1f' $(echo "scale=1; (9-$x)/2" | bc -l))
-    for y in $(seq 1 5)
+    for rs in $(seq 1 5)
     do
         #echo "$ps" >> solTime.txt
         #yp=$(printf '%.1f' $(echo "scale=1; $y/2" | bc -l))
@@ -402,16 +402,16 @@ do
         T=0
         T2=0
         T3=0
-        for nb in $(seq 1 10)
+        for nb in $(seq 1 1)
         do
             #python3 randomProblem.py -ps
             S1=$(date +%s%N)
-            result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd` | cut -d'>' -f2)"
+            result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd -ms` | cut -d'>' -f2)"
             E1=$(date +%s%N)
             T=$((($E1 - $S1)/1000000+$T))
 
             S1=$(date +%s%N)
-            result2="$(echo `python3 ./buildGraph.py ./configs/random.json -co` | cut -d'>' -f2)"
+            result2="$(echo `python3 ./buildGraph.py ./configs/random.json -co -ms` | cut -d'>' -f2)"
             E1=$(date +%s%N)
             T2=$((($E1 - $S1)/1000000+$T2))
 
@@ -420,11 +420,11 @@ do
             E1=$(date +%s%N)
             T3=$((($E1 - $S1)/1000000+$T3))
         done
-        T=$(($T/10))
+        #T=$(($T/10))
         echo "(basic_problem_1 with bs=$bs and rs=$rs took $T miliseconds with -kd, succeeded = $result)" >> solTime.txt
-        T2=$(($T2/10))
+        #T2=$(($T2/10))
         echo "(basic_problem_1 with bs=$bs and rs=$rs took $T2 miliseconds with -co, succeeded = $result2)" >> solTime.txt
-        T3=$(($T3/10))
+        #T3=$(($T3/10))
         echo "(basic_problem_1 with bs=$bs and rs=$rs took $T3 miliseconds, succeeded = $result3)" >> solTime.txt
     done
 done
@@ -439,16 +439,16 @@ do
     T=0
     T2=0
     T3=0
-    for nb in $(seq 1 10)
+    for nb in $(seq 1 1)
     do
         #python3 randomProblem.py -ps
         S1=$(date +%s%N)
-        result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd` | cut -d'>' -f2)"
+        result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd -mi` | cut -d'>' -f2)"
         E1=$(date +%s%N)
         T=$((($E1 - $S1)/1000000+$T))
 
         S1=$(date +%s%N)
-        result2="$(echo `python3 ./buildGraph.py ./configs/random.json -co` | cut -d'>' -f2)"
+        result2="$(echo `python3 ./buildGraph.py ./configs/random.json -co -mi` | cut -d'>' -f2)"
         E1=$(date +%s%N)
         T2=$((($E1 - $S1)/1000000+$T2))
 
@@ -457,10 +457,10 @@ do
         E1=$(date +%s%N)
         T3=$((($E1 - $S1)/1000000+$T3))
     done
-    T=$(($T/10))
+    #T=$(($T/10))
     echo "(basic_problem_1 with mi=$tmi took $T miliseconds with -kd, succeeded = $result)" >> solTime.txt
-    T2=$(($T2/10))
+    #T2=$(($T2/10))
     echo "(basic_problem_1 with mi=$tmi took $T2 miliseconds with -co, succeeded = $result2)" >> solTime.txt
-    T3=$(($T3/10))
-    echo "(basic_problem_1 with mi=$tmi took $T miliseconds, succeeded = $result3)" >> solTime.txt
+    #T3=$(($T3/10))
+    echo "(basic_problem_1 with mi=$tmi took $T3 miliseconds, succeeded = $result3)" >> solTime.txt
 done

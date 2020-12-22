@@ -73,6 +73,7 @@ def calculateDistance(x1, y1, x2, y2): #  taken from https://community.esri.com/
     return dist
 
 def cutList(node_list, index, cond):
+    #print(cond)
     if (cond) or (len(node_list[index].defending_shots) == 0) :
         #print(str(cond))
         #print(str(len(node_list[index].defending_shots)))
@@ -228,7 +229,7 @@ class Graph:
             self.defender_position_nodes_bruteforce = self.defender_position_nodes.copy()
         self.computeDefending()
         self.sortByDefendingShots()
-        self.defender_position_nodes_close_to_opponent = self.defender_position_nodes.copy()
+        self.defender_position_nodes_close_to_opponent = self.defender_position_nodes[:]
         self.sol_name = solution_name
         ###self.defending_edges = []
         #self.computeDefending()
@@ -294,31 +295,54 @@ class Graph:
             self.alreadyOneGoalKeeper = True
 
     def nbDefenders(self):
+        #print(opt_d)
+        #print(self.board.problem.defenders)
         if (self.board.problem.defenders is not None) and (opt_d) :
+            #print(self.board.problem.defenders.any())
             if self.board.problem.defenders.any() :
+                #print(self.board.problem.defenders[0])
                 if self.board.problem.defenders[0].any() :
                     self.nb_def = len(self.board.problem.defenders[0])
+                    #print(self.nb_def)
                     for index in range(self.nb_def) :
                         self.starting_pos.append(Defender([self.board.problem.defenders[0][index],self.board.problem.defenders[1][index]]))
+                    #print(len(self.starting_pos))
                 else :
                     self.nb_def = 0
-                    print("Either 0 defenders are allowed, or bad read")
+                    #print("Either 0 defenders are allowed, or bad read")
 
     def onTargetShots(self):
         #screen = pygame.display.set_mode(board.size) #numpy.array([1280, 960])
-        for opp_id in range(self.board.problem.getNbOpponents()) :
+        # for opp_id in range(self.board.problem.getNbOpponents()) :
+        #     nb_shots = 0
+        #     kick_dir = 0
+        #     opp_pos = self.board.problem.getOpponent(opp_id)
+        #     while kick_dir < 2 * math.pi:
+        #         for goal in self.board.problem.goals:
+        #             goal_pos = goal.kickResult(opp_pos, kick_dir)
+        #             if not goal_pos is None :
+        #                 nb_shots = nb_shots + 1
+        #                 s = OpponentShot(opp_pos, kick_dir)
+        #                 self.shot_on_target_nodes.append(s)
+        #             kick_dir += self.board.problem.theta_step
+        #     self.opponents_and_shots[str(opp_pos)] = nb_shots
+
+        mock_defender = numpy.array([[self.board.problem.field_limits[0, 0], self.board.problem.field_limits[1, 0]]]).transpose()
+        #print(mock_defender)
+        for opp_id in range(self.board.problem.getNbOpponents()):
             nb_shots = 0
             kick_dir = 0
             opp_pos = self.board.problem.getOpponent(opp_id)
             while kick_dir < 2 * math.pi:
-                for goal in self.board.problem.goals:
-                    goal_pos = goal.kickResult(opp_pos, kick_dir)
-                    if goal_pos is not None :
-                        nb_shots = nb_shots + 1
-                        s = OpponentShot(opp_pos, kick_dir)
-                        self.shot_on_target_nodes.append(s)
-                    kick_dir += self.board.problem.theta_step
+                s = self.board.problem.computeShotResult(self.board.problem.getOpponent(opp_id), kick_dir,
+                                           mock_defender)
+                if s.result != ShotResult.OUT :
+                    nb_shots = nb_shots + 1
+                    shot_to_add = OpponentShot(opp_pos, kick_dir)
+                    self.shot_on_target_nodes.append(shot_to_add)
+                kick_dir += self.board.problem.theta_step
             self.opponents_and_shots[str(opp_pos)] = nb_shots
+        #print(len(self.shot_on_target_nodes))
 
     def isTooCloseToADefender(self, nb_defs, def_list) :
         if self.dist == 0.0 :
@@ -345,9 +369,8 @@ class Graph:
             self.dist = self.board.problem.robot_radius * 2
             if self.board.problem.min_dist and opt_mi :
                 if self.board.problem.min_dist > self.dist :
-                    #print("aaaaaaaa")
-                    #self.dist = self.board.problem.min_dist + self.board.problem.robot_radius
-                    self.dist = self.board.problem.min_dist / 2 + self.board.problem.robot_radius
+                    self.dist = self.board.problem.min_dist + self.board.problem.robot_radius
+                    #self.dist = self.board.problem.min_dist / 2 + self.board.problem.robot_radius
         elif self.board.problem.min_dist and opt_mi :
             self.dist = self.board.problem.min_dist + self.board.problem.robot_radius
             # self.dist = self.board.problem.min_dist / 2 + self.board.problem.robot_radius
@@ -441,25 +464,39 @@ class Graph:
     # tester une version où on prend dans l'ordre des défenseurs avec le plus de buts, on retient ceux qui défendent un but qu'on a encore jamais couvert
     # et dans le cas où on fait attention à la distance : on ne l'ajoute pas s'il est trop proche d'un déjà pris ; et si jamais on a le temps on pourrait essayer de coder un programme qui une fois qu'on a fini cette fonction, vérifie pour tous les buts non protégés si on ne peut pas ajouter un défenseur qui le défend et remplacer les défenseurs qui entrent en collision avec le nouveau par d'autres défenseurs qui couvrent les mêmes buts mais sont suffisamment espacés
     
-    def notDefended(self, defender_nb, all) :
+    def notDefendedList(self, defender_nb, all, node_list) :
         shots = None
         if all :
             shots = self.shot_on_target_nodes[:]
         else :
-            shots = self.defender_position_nodes[defender_nb].defending_shots[:]
+            shots = node_list[defender_nb].defending_shots[:]
         for index in range(defender_nb) :
+            #print(node_list[index].pos)
             if shots is None :
                 break
-            for shot in self.defender_position_nodes[index].defending_shots :
+            #print(node_list)
+            #print(index)
+            #print(node_list[index])
+            for shot in node_list[index].defending_shots :
                 if shot in shots :
+                    #print(shot.pos)
                     shots.remove(shot)
             #index = index + 1
+        #print("all = "+str(all))
+        #print(shots)
         return shots
+
+    def notDefended(self, defender_nb, all) :
+        return self.notDefendedList(defender_nb, all, self.defender_position_nodes)
 
     def keepMostDefending(self) :
         defender_nb = 0
-        while defender_nb < len(self.defender_position_nodes) :
-            if cutList(self.defender_position_nodes, defender_nb, self.notDefended(defender_nb, True) == []) :
+        while (defender_nb < len(self.defender_position_nodes)) and (defender_nb < self.nb_def) :
+            cond = self.notDefended(defender_nb, True) == []
+            cond2 = cutList(self.defender_position_nodes, defender_nb, cond)
+            #print(cond)
+            if cond2 :
+                #print("cond2 est True")
                 break
             defender = self.defender_position_nodes[defender_nb]
             if (self.notDefended(defender_nb, False) is None) or (any(self.notDefended(defender_nb, False)) == False) or (self.isTooCloseToAnOpponent(defender.pos[0], defender.pos[1])) or (self.isTooCloseToADefender(defender_nb, self.defender_position_nodes)) or (not self.canBePlaced(defender.pos)) :
@@ -518,7 +555,9 @@ class Graph:
         #for def_pos in self.defender_position_nodes_close_to_opponent
         self.alreadyOneGoalKeeper = False
         index = 0
-        while index < len(self.defender_position_nodes_close_to_opponent) :
+        while (index < len(self.defender_position_nodes_close_to_opponent)) and (index < self.nb_def) :
+            #print(self.defender_position_nodes_close_to_opponent[index].pos)
+            #print(self.opponents_and_shots)
             if (self.opponents_and_shots is None) or (cutList(self.defender_position_nodes_close_to_opponent, index, not self.opponents_and_shots)) :
                 break
             defender = self.defender_position_nodes_close_to_opponent[index]
@@ -545,7 +584,7 @@ class Graph:
                 else :
                     self.newGoalKeeper(defender.pos)
                     index = index + 1
-                    index = index - deleteUselessDefenders(self.defender_position_nodes, index)
+                    index = index - deleteUselessDefenders(self.defender_position_nodes_close_to_opponent, index)
             else :
                 #del defender
                 self.defender_position_nodes_close_to_opponent.pop(index)
@@ -574,7 +613,7 @@ class Graph:
                     if not self.canBePlaced(defender.pos) :
                         break
                     self.newGoalKeeper(defender.pos)
-                if self.notDefended(len(permutation), True) == [] :
+                if self.notDefendedList(len(permutation), True, permutation) == [] :
                     if opt_d :
                         this_dist = totalDistance(self.starting_pos, permutation)
                         if total_dist == None :
@@ -610,7 +649,7 @@ class Graph:
         #print(self.opponents_and_shots)
         #print("retrying?")
         if opt_re and (not self.solutionOneWorked()) and (not self.solutionTwoWorked()) and (not self.bf_worked) :
-            print("Retrying without extensions")
+            #print("Retrying without extensions")
             #print(len(self.defender_position_nodes_close_to_opponent))
             #print(len(self.defender_position_nodes))
             opt_ga = False
@@ -626,6 +665,7 @@ class Graph:
             self.computeDefending()
             self.sortByDefendingShots()
             self.defender_position_nodes_close_to_opponent = self.defender_position_nodes.copy()
+            self.defender_position_nodes_bruteforce = self.defender_position_nodes.copy()
             if opt_kd :
                 self.keepMostDefending()
             if opt_co :
@@ -639,6 +679,8 @@ class Graph:
         #print("Two")
         #listFillWithDefenders(self.defender_position_nodes, len(self.starting_pos), self.starting_pos)
         if opt_d :
+            self.defender_position_nodes = self.defender_position_nodes[:self.nb_def]
+            self.defender_position_nodes_close_to_opponent = self.defender_position_nodes_close_to_opponent[:self.nb_def]
             listFillWithMinusOnes(self.defender_position_nodes, len(self.starting_pos))
             total_distance = totalDistance(self.starting_pos, self.defender_position_nodes)
             total_distance = orderedByDistance(self.defender_position_nodes, self.starting_pos, total_distance, self.defender_position_nodes[:])
@@ -672,7 +714,11 @@ class Graph:
         if self.bf_worked :
             self.defender_position_nodes = self.defender_position_nodes_bruteforce
             return
-        if((self.solutionOneWorked() and self.solutionTwoWorked()) or ((not self.solutionOneWorked()) and (not self.solutionTwoWorked()))) : # si on a trouvé une solution avec les deux méthodes, ou qu'on n'a trouvé aucune solution avec les deux méthodes, alors on prend la solution qui demande le moins de défenseurs si pas de start pos sinon celle qui demande le moins de déplacement
+        #print(self.solutionOneWorked())
+        #print(self.solutionTwoWorked())
+        sol_one = self.solutionOneWorked()
+        sol_two = self.solutionTwoWorked()
+        if((sol_one and sol_two) or ((not sol_one) and (not sol_two))) : # si on a trouvé une solution avec les deux méthodes, ou qu'on n'a trouvé aucune solution avec les deux méthodes, alors on prend la solution qui demande le moins de défenseurs si pas de start pos sinon celle qui demande le moins de déplacement
             if self.starting_pos == [] :
                 if (len(self.defender_position_nodes_close_to_opponent) < len(self.defender_position_nodes)) and (len(self.defender_position_nodes_close_to_opponent) > 0) :
                     self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
@@ -681,7 +727,7 @@ class Graph:
             #if (len(self.defender_position_nodes_close_to_opponent) < len(self.defender_position_nodes)) :
             #    self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
                 #print("choice 2")
-        elif ((not self.solutionOneWorked()) and (self.solutionTwoWorked())) : # si la méthode 1 ne défend pas tous les tirs alors que la méthode 2 si, alors on garde la méthode 2
+        elif ((not sol_one) and (sol_two)) : # si la méthode 1 ne défend pas tous les tirs alors que la méthode 2 si, alors on garde la méthode 2
             #self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
             self.defender_position_nodes = self.defender_position_nodes_close_to_opponent
             if self.starting_pos != [] :
@@ -707,6 +753,8 @@ class Graph:
         if (len(self.defender_position_nodes) <= 0) :
             #print("len(self.defender_position_nodes) <= 0")
             return False
+        #print(self.starting_pos)
+        #print(len(self.defender_position_nodes))
         if (opt_d) and (self.starting_pos != []) and (len(self.defender_position_nodes) > len(self.starting_pos)) :
             #print("(self.starting_pos != []) and (len(self.defender_position_nodes) > len(self.starting_pos))")
             return False
@@ -714,6 +762,8 @@ class Graph:
         return (self.notDefended(len(self.defender_position_nodes), True) == [])
 
     def solutionTwoWorked(self):
+        if not opt_co :
+            return False
         if (len(self.defender_position_nodes_close_to_opponent) <= 0) :
             return False
         if (opt_d) and (self.starting_pos != []) and (len(self.defender_position_nodes_close_to_opponent) > len(self.starting_pos)) :
@@ -776,6 +826,38 @@ class OpponentShot:
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #if (len(sys.argv) < 3):
 #    sys.exit("Usage: " + sys.argv[0] + " <problem.json> <solution.json>")
 
@@ -788,12 +870,13 @@ if len(sys.argv) < 2 :
     print("Pensez à ajouter un fichier de problème .json en entrée")
     sys.exit()
 
+if sys.argv[-1] == "-h" :
+    print(how_to)
+    sys.exit()
+
 solution_name = "sol_to_"+sys.argv[1].split("/")[-1]
 
 if (len(sys.argv) != 2):
-    if sys.argv[2] == "-h" :
-        print(how_to)
-        sys.exit()
     opt_ga = False
     opt_d = False
     opt_ms = False
@@ -805,6 +888,8 @@ if (len(sys.argv) != 2):
     #solution_name = "computed_solution.json"
 
     for opt in range(len(sys.argv)):
+        if sys.argv[opt] == "-h" :
+            print(how_to)
         if sys.argv[opt] == "-ga" :
             opt_ga = True
         elif sys.argv[opt] == "-d" :
@@ -878,9 +963,15 @@ if opt_co :
 if opt_bf :
     graph.bf_worked = graph.bruteForce()
 
+#print(len(graph.defender_position_nodes_close_to_opponent))
+
 graph.chooseAnswer()
 
+#print(graph.solutionOneWorked())
+
 changeMinusOnesToDefenders(graph.starting_pos, graph.defender_position_nodes)
+
+#print(graph.solutionOneWorked())
 
 print(">"+str(graph.isSolution())) #faire qqch de cette info
 
