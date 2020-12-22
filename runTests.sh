@@ -4,16 +4,13 @@ echo "Résultats des tests :" >| solTime.txt
 echo "-Modifions pos_step :" >> solTime.txt
 for ps in $(seq 1 10)
 do
-    #echo "$ps" >> solTime.txt
     tps=$(printf '%.2f' $(echo "scale=2; $ps/20" | bc -l))
-    #echo "$tps" >> solTime.txt
     python3 ./randomProblem.py -ps $tps
     T=0
     T2=0
     T3=0
     for nb in $(seq 1 10)
     do
-        #python3 randomProblem.py -ps
         S1=$(date +%s%N)
         result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd` | cut -d'>' -f2)"
         E1=$(date +%s%N)
@@ -44,18 +41,15 @@ do
     xn=$(printf '%.1f' $(echo "scale=1; $x/-2" | bc -l))
     for y in $(seq 3 12)
     do
-        #echo "$ps" >> solTime.txt
         yp=$(printf '%.1f' $(echo "scale=1; $y/2" | bc -l))
         yn=$(printf '%.1f' $(echo "scale=1; $y/-2" | bc -l))
         fl="[[$xn,$xp],[$yn,$yp]]"
-        #echo "$tps" >> solTime.txt
         python3 ./randomProblem.py -fl $fl
         T=0
         T2=0
         T3=0
         for nb in $(seq 1 10)
         do
-            #python3 randomProblem.py -ps
             S1=$(date +%s%N)
             result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd` | cut -d'>' -f2)"
             E1=$(date +%s%N)
@@ -83,18 +77,15 @@ done
 echo "-Modifions goals avec un but :" >> solTime.txt
 for g in $(seq 1 6)
 do
-    #echo "$ps" >> solTime.txt
     gp=$(printf '%.2f' $(echo "scale=2; $g/2" | bc -l))
     gn=$(printf '%.2f' $(echo "scale=2; $g/(-2)" | bc -l))
     tg="[[[4.5,$gn],[4.5,$gp]],[-1,0]]"
-    #echo "$tps" >> solTime.txt
     python3 ./randomProblem.py -g $tg
     T=0
     T2=0
     T3=0
     for nb in $(seq 1 10)
     do
-        #python3 randomProblem.py -ps
         S1=$(date +%s%N)
         result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd` | cut -d'>' -f2)"
         E1=$(date +%s%N)
@@ -121,19 +112,15 @@ done
 echo "-Modifions goals avec plusieurs buts :" >> solTime.txt
 for mg in $(seq 1 10)
 do
-    #echo "$ps" >> solTime.txt
-    #tps=$(printf '%.2f' $(echo "scale=2; $ps/100" | bc -l))
-    #echo "$tps" >> solTime.txt
     T=0
     results=0
     T2=0
     results2=0
     T3=0
     results3=0
-    for nb in $(seq 1 1)
+    for nb in $(seq 1 1) # Mis à 1 pour accélérer le processus, augmenter pour faire des moyennes à partir des réultats
     do
         python3 ./randomProblem.py -mg $mg
-        #python3 randomProblem.py -ps
         S1=$(date +%s%N)
         result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd` | cut -d'>' -f2)"
         if [ $result = "True" ]
@@ -172,9 +159,6 @@ done
 echo "-Modifions opponents :" >> solTime.txt
 for mo in $(seq 1 8)
 do
-    #echo "$ps" >> solTime.txt
-    #tps=$(printf '%.2f' $(echo "scale=2; $ps/100" | bc -l))
-    #echo "$tps" >> solTime.txt
     T=0
     results=0
     T2=0
@@ -184,7 +168,6 @@ do
     for nb in $(seq 1 1)
     do
         python3 ./randomProblem.py -mo $mo
-        #python3 randomProblem.py -ps
         S1=$(date +%s%N)
         result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd` | cut -d'>' -f2)"
         if [ $result = "True" ]
@@ -223,16 +206,13 @@ done
 echo "-Modifions robot_radius :" >> solTime.txt
 for rr in $(seq 1 20)
 do
-    #echo "$ps" >> solTime.txt
     trr=$(printf '%.3f' $(echo "scale=3; $rr/100" | bc -l))
-    #echo "$tps" >> solTime.txt
     python3 ./randomProblem.py -rr $trr
     T=0
     T2=0
     T3=0
     for nb in $(seq 1 1)
     do
-        #python3 randomProblem.py -ps
         S1=$(date +%s%N)
         result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd` | cut -d'>' -f2)"
         E1=$(date +%s%N)
@@ -259,16 +239,13 @@ done
 echo "-Modifions theta_step :" >> solTime.txt
 for ts in $(seq 1 10)
 do
-    #echo "$ps" >> solTime.txt
     tts=$(printf '%.3f' $(echo "scale=3; $ts/100" | bc -l))
-    #echo "$tps" >> solTime.txt
     python3 ./randomProblem.py -ts $tts
     T=0
     T2=0
     T3=0
     for nb in $(seq 1 1)
     do
-        #python3 randomProblem.py -ps
         S1=$(date +%s%N)
         result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd` | cut -d'>' -f2)"
         E1=$(date +%s%N)
@@ -299,18 +276,15 @@ do
     xn=$(printf '%.1f' $(echo "scale=1; (9-$x)/2" | bc -l))
     for y in $(seq 1 6)
     do
-        #echo "$ps" >> solTime.txt
         yp=$(printf '%.1f' $(echo "scale=1; $y/2" | bc -l))
         yn=$(printf '%.1f' $(echo "scale=1; $y/(-2)" | bc -l))
         ga="[[$xn,$xp],[$yn,$yp]]"
-        #echo "$tps" >> solTime.txt
         python3 ./randomProblem.py -ga $ga
         T=0
         T2=0
         T3=0
         for nb in $(seq 1 1)
         do
-            #python3 randomProblem.py -ps
             S1=$(date +%s%N)
             result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd -ga` | cut -d'>' -f2)"
             E1=$(date +%s%N)
@@ -338,9 +312,6 @@ done
 echo "-Modifions defenders :" >> solTime.txt
 for md in $(seq 1 8)
 do
-    #echo "$ps" >> solTime.txt
-    #tps=$(printf '%.2f' $(echo "scale=2; $ps/100" | bc -l))
-    #echo "$tps" >> solTime.txt
     T=0
     results=0
     T2=0
@@ -350,7 +321,6 @@ do
     for nb in $(seq 1 1)
     do
         python3 ./randomProblem.py -md $md
-        #python3 randomProblem.py -ps
         S1=$(date +%s%N)
         result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd -d` | cut -d'>' -f2)"
         if [ $result = "True" ]
@@ -389,22 +359,14 @@ done
 echo "-Modifions ball_max_speed et robot_max_speed :" >> solTime.txt
 for bs in $(seq 3 10)
 do
-    #xp=$(printf '%.1f' $(echo "scale=1; 9/2" | bc -l))
-    #xn=$(printf '%.1f' $(echo "scale=1; (9-$x)/2" | bc -l))
     for rs in $(seq 1 5)
     do
-        #echo "$ps" >> solTime.txt
-        #yp=$(printf '%.1f' $(echo "scale=1; $y/2" | bc -l))
-        #yn=$(printf '%.1f' $(echo "scale=1; $y/(-2)" | bc -l))
-        #ga="[[$xn,$xp],[$yn,$yp]]"
-        #echo "$tps" >> solTime.txt
         python3 ./randomProblem.py -bs $bs -rs $rs
         T=0
         T2=0
         T3=0
         for nb in $(seq 1 1)
         do
-            #python3 randomProblem.py -ps
             S1=$(date +%s%N)
             result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd -ms` | cut -d'>' -f2)"
             E1=$(date +%s%N)
@@ -432,16 +394,13 @@ done
 echo "-Modifions min_dist :" >> solTime.txt
 for mi in $(seq 1 10)
 do
-    #echo "$ps" >> solTime.txt
     tmi=$(printf '%.2f' $(echo "scale=2; $mi/10" | bc -l))
-    #echo "$tps" >> solTime.txt
     python3 ./randomProblem.py -mi $tmi
     T=0
     T2=0
     T3=0
     for nb in $(seq 1 1)
     do
-        #python3 randomProblem.py -ps
         S1=$(date +%s%N)
         result="$(echo `python3 ./buildGraph.py ./configs/random.json -kd -mi` | cut -d'>' -f2)"
         E1=$(date +%s%N)
